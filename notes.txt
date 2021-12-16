@@ -1,6 +1,0 @@
-cd existing_folder
-git init --initial-branch=main
-git remote add origin git@git.rz.uni-augsburg.de:mmbees-git/wrf_chem_for_palm.git
-git add .
-git commit -m "Initial commit"
-git push -u origin main
