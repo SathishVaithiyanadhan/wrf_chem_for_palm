@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 
 #------------------------------------------------------------------------------#
-#
 # Scripts for processing of WRF-CHEM files to PALM dynamic driver.
-#
 #------------------------------------------------------------------------------#
-
 '''WRF (+WRF-CHEM) utility module for PALM dynamic driver generator'''
 
 import os
@@ -40,7 +37,6 @@ class WRFCoordTransform(object):
         attr = lambda a: getattr(ncf, a)
 
         # Define grids
-
         # see http://www.pkrc.net/wrf-lambert.html
         #latlon_wgs84 = pyproj.Proj(proj='latlong',
         #    ellps='WGS84', datum='WGS84',
@@ -79,7 +75,6 @@ class WRFCoordTransform(object):
         j0_y = center_y - extent_y*.5
 
         # Define fast transformation methods
-
         def latlon_to_ji(lat, lon):
             x, y = pyproj.transform(latlon_sphere, lambert_grid,
                     lon, lat)
@@ -113,10 +108,8 @@ class WRFCoordTransform(object):
         d = np.hypot(jj-j, ii-i)
         print('error for U-staggered ll->ji: max {0} m, avg {1} m.'.format(d.max(), d.mean()))
 
-
 class BilinearRegridder(object):
     '''Bilinear regridder for multidimensional data.
-
    # By standard, the last two dimensions are always Y,X in that order.
     '''
     def __init__(self, projected_x, projected_y, preloaded=False):
@@ -140,7 +133,6 @@ class BilinearRegridder(object):
             # Prepare slices for preloading from NetCDF files (for cases where
             # the range of loaded Y, X coordinates is much less than total
             # size. The regrid method then expects preloaded data.
-
             ybase = self.y0.min()
             self.ys = slice(ybase, self.y0.max()+2)
             self.y0 -= ybase
@@ -231,9 +223,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     dimnames = ['z', 'zw', 'zsoil']   # dimnames of palm vertical dims
     dimensions = [zdim , zwdim, zsoildim]
 
-    #print("infile: " , infile)
-    #print("outfile: ", outfile)
-
     try:
         os.remove(outfile)
         os.remove(infile+'_vinterp.log')
@@ -314,7 +303,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     init_atmosphere_qv = interpolate_1d(z_levels, height, qv_raw)
     vdata = nc_outfile.createVariable('init_atmosphere_qv', "f4", ("Time", "z","south_north","west_east"))
     vdata[0,:,:,:] = init_atmosphere_qv
-    
     # ======================= POTENTIAL TEMPERATURE ==========================
     pt_raw = nc_infile.variables['T'][0] + 300.   # from perturbation pt to standard
     pt_raw = np.r_[pt_raw[0:1], pt_raw]
@@ -323,7 +311,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     #plt.figure(); plt.contourf(pt[0]) ; plt.colorbar() ; plt.show()
     vdata = nc_outfile.createVariable('init_atmosphere_pt', "f4", ("Time", "z","south_north","west_east"))
     vdata[0,:,:,:] = init_atmosphere_pt
-    
     # ======================= Wind ==========================================
     u_raw = nc_infile.variables['U'][0]
     u_raw = np.r_[u_raw[0:1], u_raw]
@@ -347,12 +334,10 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     vdata = nc_outfile.createVariable('init_atmosphere_w', "f4", ("Time", "zw","south_north","west_east"))
     #vdata.coordinates = "XLONG XLAT XTIME"
     vdata[0,:,:,:] = init_atmosphere_w
-
     # ===================== SURFACE PRESSURE ==================================
     surface_forcing_surface_pressure = nc_infile.variables['PSFC']
     vdata = nc_outfile.createVariable('surface_forcing_surface_pressure', "f4", ("Time", "south_north","west_east"))
     vdata[0,:,:] = surface_forcing_surface_pressure[0,:,:]
-    
     # ======================== SOIL VARIABLES (without vertical interpolation) =============
     # soil temperature
     init_soil_t = nc_infile.variables['TSLB']
@@ -377,7 +362,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     vdata[:] = list (z_levels_stag) 
 
     # zsoil is taken from wrf - not need to define it
-
     # ======================== CHEMISTRY ===================================================
     # convert wrf-chem units to PALM units
     #NO:ppmv to ppm
@@ -421,7 +405,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
 
 def palm_wrf_gw(f, lon, lat, levels, tidx=0):
     '''Calculate geostrophic wind from WRF using metpy'''
-
     hgts, ug, vg = calcgw_wrf(f, lat, lon, levels, tidx)
 
     # extrapolate at the bottom
@@ -430,7 +413,6 @@ def palm_wrf_gw(f, lon, lat, levels, tidx=0):
     vg = np.r_[vg[0], vg]
 
     return minterp(levels, hgts, ug, vg)
-
 
 def minterp(interp_heights, data_heights, u, v):
     '''Interpolate wind using power law for agl levels'''
@@ -443,9 +425,6 @@ def minterp(interp_heights, data_heights, u, v):
     assert hindex[-1] < len(data_heights)
     lbound = pdata[lindex]
     hcoef = (pinterp - lbound) / (pdata[hindex] - lbound)
-    #print(data_heights)
-    #print(lindex)
-    #print(hcoef)
     lcoef = 1. - hcoef
     iu = u[lindex] * lcoef + u[hindex] * hcoef
     iv = v[lindex] * lcoef + v[hindex] * hcoef
@@ -453,7 +432,6 @@ def minterp(interp_heights, data_heights, u, v):
 
 def get_wrf_dims(f, lat, lon, xlat, xlong):
     '''A crude method, yet satisfactory for approximate WRF surroundings'''
-
     sqdist = (xlat - lat)**2 + (xlong - lon)**2
     coords = np.unravel_index(sqdist.argmin(), sqdist.shape)
 
@@ -476,8 +454,6 @@ def calcgw_wrf(f, lat, lon, levels, tidx=0):
     (iy, ix), area, (iby, ibx) = get_wrf_dims(f, lat, lon, xlat, xlong)
     areat = (tidx,) + area
     areatz = (tidx, slice(None)) + area
-    #print('wrf coords', lat, lon, xlat[iy,ix], xlong[iy,ix])
-    #print(xlat[area][iby,ibx], xlong[area][iby,ibx], areat)
 
     # load area
     hgt = (f.variables['PH'][areatz] + f.variables['PHB'][areatz]) / 9.81
@@ -530,7 +506,6 @@ def calcgw_wrf(f, lat, lon, levels, tidx=0):
 # The following two functions calculate GW from GFS files, although this
 # function is currently not implemented in PALM dynamic driver generation
 # script
-
 def calcgw_gfs(v, lat, lon):
     height, lats, lons = v.data(lat1=lat-gw_gfs_margin_deg ,lat2=lat+gw_gfs_margin_deg,
             lon1=lon-gw_gfs_margin_deg, lon2=lon+gw_gfs_margin_deg)
@@ -582,7 +557,6 @@ def combinegw_gfs(grbs, levels, lat, lon):
 
 if __name__ == '__main__':
     import argparse
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-w', '--wrfout', help='verify wrfout file')
     parser.add_argument('-c', '--camx', help='verify camx file')
@@ -614,7 +588,6 @@ if __name__ == '__main__':
             print_dstat(lev, delta[lev])
 
         f.close()
-
     if args.camx:
         f = netCDF4.Dataset(args.camx)
         t = CAMxCoordTransform(f)

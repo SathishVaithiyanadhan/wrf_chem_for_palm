@@ -59,8 +59,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         # prepare influx/outflux area sizes
         zstag_all = np.r_[0., z_levels_stag, ztop]
         zwidths = zstag_all[1:] - zstag_all[:-1]
-        #print('zwidths', zwidths)
-        print('zwidths')
+        print('zwidths', zwidths)
         areas_xb = np.zeros((len(z_levels), 1))
         areas_xb[:,0] = zwidths * dy
         areas_yb = np.zeros((len(z_levels), 1))
@@ -86,18 +85,17 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
             # open variables in the input file
             init_atmosphere_pt = infile.variables['init_atmosphere_pt']
             init_atmosphere_qv = infile.variables['init_atmosphere_qv']
-            init_atmosphere_u = infile.variables['init_atmosphere_u']
-            init_atmosphere_v = infile.variables['init_atmosphere_v']
-            init_atmosphere_w = infile.variables['init_atmosphere_w']
-            init_soil_m       = infile.variables['init_soil_m']
-            init_soil_t       = infile.variables['init_soil_t']
+            init_atmosphere_u  = infile.variables['init_atmosphere_u']
+            init_atmosphere_v  = infile.variables['init_atmosphere_v']
+            init_atmosphere_w  = infile.variables['init_atmosphere_w']
+            init_soil_m        = infile.variables['init_soil_m']
+            init_soil_t        = infile.variables['init_soil_t']
             # chemistry
             init_atmosphere_no    = infile.variables['init_atmosphere_no']
             init_atmosphere_no2   = infile.variables['init_atmosphere_no2']
             init_atmosphere_o3    = infile.variables['init_atmosphere_o3']
             init_atmosphere_pm10  = infile.variables['init_atmosphere_pm10']
             init_atmosphere_pm2_5 = infile.variables['init_atmosphere_pm2_5']
-
 
             # create netcdf structure
             _val_init_atmosphere_pt = outfile.createVariable('init_atmosphere_pt', "f4", ("z", "y", "x"),
@@ -362,10 +360,10 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
             # write values for initialization variables
             _val_init_atmosphere_pt[:, :, :] = init_atmosphere_pt[0, :, :, :]
             _val_init_atmosphere_qv[:, :, :] = init_atmosphere_qv[0, :, :, :]
-            _val_init_atmosphere_u[:, :, :] = init_atmosphere_u[0, :, :, 1:]
-            _val_init_atmosphere_v[:, :, :] = init_atmosphere_v[0, :, 1:, :]
-            _val_init_atmosphere_w[:, :, :] = init_atmosphere_w[0, :, :, :]
-            _val_init_soil_t[:, :, :] = init_soil_t[0, :, :, :]
+            _val_init_atmosphere_u[:, :, :]  = init_atmosphere_u[0, :, :, 1:]
+            _val_init_atmosphere_v[:, :, :]  = init_atmosphere_v[0, :, 1:, :]
+            _val_init_atmosphere_w[:, :, :]  = init_atmosphere_w[0, :, :, :]
+            _val_init_soil_t[:, :, :]        = init_soil_t[0, :, :, :]
             for k in range(0,_val_init_soil_m.shape[0]):
                 # adjust soil moisture according soil_moisture_adjust field (if exists)
                 _val_init_soil_m[k, :, :] = init_soil_m[0, k, :, :] * sma[:, :]
@@ -405,51 +403,51 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     # surface pressure
                     _val_surface_forcing_surface_pressure[ts] = np.average(surface_forcing_surface_pressure[:,:,:], axis = (1,2))[0]
                     # boundary conditions
-                    _val_ls_forcing_pt_left[ts, :, :] = init_atmosphere_pt[0, :, :, 0]
+                    _val_ls_forcing_pt_left[ts, :, :]  = init_atmosphere_pt[0, :, :, 0]
                     _val_ls_forcing_pt_right[ts, :, :] = init_atmosphere_pt[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_pt_south[ts, :, :] = init_atmosphere_pt[0, :, 0, :]
                     _val_ls_forcing_pt_north[ts, :, :] = init_atmosphere_pt[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_pt_top[ts, :, :] = init_atmosphere_pt[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_pt_top[ts, :, :]   = init_atmosphere_pt[0, dimensions['zdim'] - 1, :, :]
 
-                    _val_ls_forcing_qv_left[ts, :, :] = init_atmosphere_qv[0, :, :, 0]
+                    _val_ls_forcing_qv_left[ts, :, :]  = init_atmosphere_qv[0, :, :, 0]
                     _val_ls_forcing_qv_right[ts, :, :] = init_atmosphere_qv[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_qv_south[ts, :, :] = init_atmosphere_qv[0, :, 0, :]
                     _val_ls_forcing_qv_north[ts, :, :] = init_atmosphere_qv[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_qv_top[ts, :, :] = init_atmosphere_qv[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_qv_top[ts, :, :]   = init_atmosphere_qv[0, dimensions['zdim'] - 1, :, :]
 
-                    _val_ls_forcing_no_left[ts, :, :] = init_atmosphere_no[0, :, :, 0]
+                    _val_ls_forcing_no_left[ts, :, :]  = init_atmosphere_no[0, :, :, 0]
                     _val_ls_forcing_no_right[ts, :, :] = init_atmosphere_no[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_no_south[ts, :, :] = init_atmosphere_no[0, :, 0, :]
                     _val_ls_forcing_no_north[ts, :, :] = init_atmosphere_no[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_no_top[ts, :, :] = init_atmosphere_no[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_no_top[ts, :, :]   = init_atmosphere_no[0, dimensions['zdim'] - 1, :, :]
                     
                     # chemistry
-                    _val_ls_forcing_no2_left[ts, :, :] = init_atmosphere_no2[0, :, :, 0]
+                    _val_ls_forcing_no2_left[ts, :, :]  = init_atmosphere_no2[0, :, :, 0]
                     _val_ls_forcing_no2_right[ts, :, :] = init_atmosphere_no2[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_no2_south[ts, :, :] = init_atmosphere_no2[0, :, 0, :]
                     _val_ls_forcing_no2_north[ts, :, :] = init_atmosphere_no2[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_no2_top[ts, :, :] = init_atmosphere_no2[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_no2_top[ts, :, :]   = init_atmosphere_no2[0, dimensions['zdim'] - 1, :, :]
 
-                    _val_ls_forcing_o3_left[ts, :, :] = init_atmosphere_o3[0, :, :, 0]
+                    _val_ls_forcing_o3_left[ts, :, :]  = init_atmosphere_o3[0, :, :, 0]
                     _val_ls_forcing_o3_right[ts, :, :] = init_atmosphere_o3[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_o3_south[ts, :, :] = init_atmosphere_o3[0, :, 0, :]
                     _val_ls_forcing_o3_north[ts, :, :] = init_atmosphere_o3[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_o3_top[ts, :, :] = init_atmosphere_o3[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_o3_top[ts, :, :]   = init_atmosphere_o3[0, dimensions['zdim'] - 1, :, :]
 
-                    _val_ls_forcing_pm10_left[ts, :, :] = init_atmosphere_pm10[0, :, :, 0]
+                    _val_ls_forcing_pm10_left[ts, :, :]  = init_atmosphere_pm10[0, :, :, 0]
                     _val_ls_forcing_pm10_right[ts, :, :] = init_atmosphere_pm10[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_pm10_south[ts, :, :] = init_atmosphere_pm10[0, :, 0, :]
                     _val_ls_forcing_pm10_north[ts, :, :] = init_atmosphere_pm10[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_pm10_top[ts, :, :] = init_atmosphere_pm10[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_pm10_top[ts, :, :]   = init_atmosphere_pm10[0, dimensions['zdim'] - 1, :, :]
 
-                    _val_ls_forcing_pm2_5_left[ts, :, :] = init_atmosphere_pm2_5[0, :, :, 0]
+                    _val_ls_forcing_pm2_5_left[ts, :, :]  = init_atmosphere_pm2_5[0, :, :, 0]
                     _val_ls_forcing_pm2_5_right[ts, :, :] = init_atmosphere_pm2_5[0, :, :, dimensions['xdim'] - 1]
                     _val_ls_forcing_pm2_5_south[ts, :, :] = init_atmosphere_pm2_5[0, :, 0, :]
                     _val_ls_forcing_pm2_5_north[ts, :, :] = init_atmosphere_pm2_5[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_pm2_5_top[ts, :, :] = init_atmosphere_pm2_5[0, dimensions['zdim'] - 1, :, :]
+                    _val_ls_forcing_pm2_5_top[ts, :, :]   = init_atmosphere_pm2_5[0, dimensions['zdim'] - 1, :, :]
 
                     # Perform mass balancing
-                    uxleft = init_atmosphere_u[0, :, :, 0]
+                    uxleft  = init_atmosphere_u[0, :, :, 0]
                     uxright = init_atmosphere_u[0, :, :, dimensions['xdim'] - 1]
                     vysouth = init_atmosphere_v[0, :, 0, :]
                     vynorth = init_atmosphere_v[0, :, dimensions['ydim'] - 1, :]
