@@ -49,6 +49,3 @@ radiation_from_wrf = False
 wrf_rad_file_mask = "auxhist6_*"
 # smoothing distance for radiation
 radiation_smoothing_distance = 10000.0
-
-# PALM species names - version for phstatp2 mechanism
-species_names = ['NO', 'NO2', 'O3', 'PM10', 'PM25']

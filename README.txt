@@ -113,7 +113,11 @@ origin_x, origin_y  origin x and y of the domain
 origin_z            origin of the domain in the vertical direction
 
 
-# Changes made to wrf + CAMx scripts
+# Changes from wrf + CAMx scripts made to wrf_chem_for_palm
 -Proj future warning resolved
 -Chemical species are read from wrf-chem files and interpolated at the same time as the dynamic variables
--interpolated files are saved to a directory directory than the wrf-chem data files
+-interpolated files are saved to a different directory than the wrf-chem data files
+
+# Latest update (Feb 2022)
+-any chemical specie from wrf-chem can be selected in the configuration file and will be included in the dynamic driver
+-extensive changes were made to palm_dynamic_output and palm_dynamic_config to accomdate the changes above

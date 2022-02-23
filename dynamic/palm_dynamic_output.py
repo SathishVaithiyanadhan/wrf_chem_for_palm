@@ -16,518 +16,314 @@ import time
 import numpy as np
 import netCDF4
 from palm_wrf_utils import palm_wrf_gw
+from palm_dynamic_config import *
 
 def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                         dimensions, z_levels, z_levels_stag, ztop,
                         z_soil_levels, dx, dy, lon_center, lat_center,
                         rad_times_proc, rad_values_proc, sma, nested_domain):
 
-    print('Processing interpolated files to dynamic driver')
+    print('\nProcessing interpolated files to dynamic driver')
     # dimension of the time coordinate
     dimtimes = len(times_sec)
     # other coordinates
     dimnames = ['z', 'zw', 'zsoil', 'x','xu', 'y', 'yv']                # z  height agl in m, zw staggered, zsoil 4 lev from wrf 
     dimsize_names = ['zdim' , 'zwdim', 'zsoildim', 'xdim', 'xudim', 'ydim', 'yvdim']    # palm: zw = z - 1
-    x = np.arange(dx, dimensions['xdim']*dx+dx, dx)     # clean this
-    print('dimension of x:', len(x))
-    y = np.arange(dy, dimensions['ydim']*dy+dy, dy)     # clean this
-    print('dimension of y:', len(y))
+    x = np.arange(dx, dimensions['xdim']*dx+dx, dx)
+    y = np.arange(dy, dimensions['ydim']*dy+dy, dy)
     # fill values
     fillvalue_float = float(-9999.0)
-    # check out file and remove for sure
     try:
         os.remove(dynamic_driver_file)
     except:
         pass
-    # create netcdf out file
-    print('Driver file:', dynamic_driver_file)
+    # boundaries
+    boundary = ['left','right','south', 'north','top']
+    # atmospheric variables
+    atmos_var = ['pt','qv','u','v','w','soil_m','soil_t']
+    all_variables = atmos_var + wrfchem_spec
+
+    # prepare influx/outflux area sizes
+    zstag_all = np.r_[0., z_levels_stag, ztop]
+    zwidths = zstag_all[1:] - zstag_all[:-1]
+    areas_xb = np.zeros((len(z_levels), 1))
+    areas_xb[:,0] = zwidths * dy
+    areas_yb = np.zeros((len(z_levels), 1))
+    areas_yb[:,0] = zwidths * dx
+    areas_zb = dx*dy
+    area_boundaries = (areas_xb.sum()*dimensions['ydim']*2
+            + areas_yb.sum()*dimensions['xdim']*2
+            + areas_zb*dimensions['xdim']*dimensions['ydim'])
+
+    # create netcdf output file
+    print('Creating Dynamic Driver:', dynamic_driver_file)
     outfile = netCDF4.Dataset(dynamic_driver_file, "w", format="NETCDF4" )
-    try:
-        # time dimension and variable
-        outfile.createDimension('time', dimtimes)
-        _val_times =  outfile.createVariable('time',"f4", ("time"))
-        # other dimensions and corresponding variables
-        for _dim in zip(dimnames, dimsize_names):  #range (len(dimnames)):
-            print(_dim[0],_dim[1], dimensions[_dim[1]])
-            outfile.createDimension(_dim[0], dimensions[_dim[1]])
-        _val_z_levels = outfile.createVariable('z',"f4", ("z"))
-        _val_z_levels_stag = outfile.createVariable('zw',"f4", ("zw"))
-        _val_z_soil_levels = outfile.createVariable('zsoil',"f4", ("zsoil"))
-        _val_y = outfile.createVariable('y',"f4", ("y"))
-        _val_x = outfile.createVariable('x',"f4", ("x"))
-
-        # prepare influx/outflux area sizes
-        zstag_all = np.r_[0., z_levels_stag, ztop]
-        zwidths = zstag_all[1:] - zstag_all[:-1]
-        print('zwidths', zwidths)
-        areas_xb = np.zeros((len(z_levels), 1))
-        areas_xb[:,0] = zwidths * dy
-        areas_yb = np.zeros((len(z_levels), 1))
-        areas_yb[:,0] = zwidths * dx
-        areas_zb = dx*dy
-        area_boundaries = (areas_xb.sum()*dimensions['ydim']*2
-                + areas_yb.sum()*dimensions['xdim']*2
-                + areas_zb*dimensions['xdim']*dimensions['ydim'])
-
-        # write values for coordinates
-        _val_times[:] = times_sec[:]
-        _val_z_levels[:] = z_levels[:]
-        _val_z_levels_stag[:] = z_levels_stag[:]
-        _val_z_soil_levels[:] = z_soil_levels[:]
-        _val_y[:] = y[:]
-        _val_x[:] = x[:]
-
-        # initialization of the variables and setting of init_* variables
-        print("Processing initialization from file", interp_files[0])
-        # open corresponding
-        infile = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
-        try:
-            # open variables in the input file
-            init_atmosphere_pt = infile.variables['init_atmosphere_pt']
-            init_atmosphere_qv = infile.variables['init_atmosphere_qv']
-            init_atmosphere_u  = infile.variables['init_atmosphere_u']
-            init_atmosphere_v  = infile.variables['init_atmosphere_v']
-            init_atmosphere_w  = infile.variables['init_atmosphere_w']
-            init_soil_m        = infile.variables['init_soil_m']
-            init_soil_t        = infile.variables['init_soil_t']
-            # chemistry
-            init_atmosphere_no    = infile.variables['init_atmosphere_no']
-            init_atmosphere_no2   = infile.variables['init_atmosphere_no2']
-            init_atmosphere_o3    = infile.variables['init_atmosphere_o3']
-            init_atmosphere_pm10  = infile.variables['init_atmosphere_pm10']
-            init_atmosphere_pm2_5 = infile.variables['init_atmosphere_pm2_5']
-
-            # create netcdf structure
-            _val_init_atmosphere_pt = outfile.createVariable('init_atmosphere_pt', "f4", ("z", "y", "x"),
-                                                             fill_value=fillvalue_float)
-            _val_init_atmosphere_pt.setncattr('lod', 2)
-            _val_init_atmosphere_qv = outfile.createVariable('init_atmosphere_qv', "f4", ("z", "y", "x"),
-                                                             fill_value=fillvalue_float)
-            _val_init_atmosphere_qv.setncattr('lod', 2)
-            _val_init_atmosphere_u = outfile.createVariable('init_atmosphere_u', "f4", ("z", "y", "xu"),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_u.setncattr('lod', 2)
-            _val_init_atmosphere_v = outfile.createVariable('init_atmosphere_v', "f4", ("z", "yv", "x"),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_v.setncattr('lod', 2)
-            _val_init_atmosphere_w = outfile.createVariable('init_atmosphere_w', "f4", ("zw", "y", "x"),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_w.setncattr('lod', 2)
-            _val_init_soil_t = outfile.createVariable('init_soil_t', "f4", ("zsoil", "y", "x"),
-                                                            fill_value=fillvalue_float)
-            _val_init_soil_t.setncattr('lod', 2)
-            _val_init_soil_m = outfile.createVariable('init_soil_m', "f4", ("zsoil", "y", "x"),
-                                                            fill_value=fillvalue_float)
-            _val_init_soil_m.setncattr('lod', 2)
-            
-            # chemistry
-            _val_init_atmosphere_no = outfile.createVariable('init_atmosphere_no', 'f4', ('z',),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_no.setncattr('lod', 1)
-            _val_init_atmosphere_no.setncattr('units','ppm')
-
-            _val_init_atmosphere_no2 = outfile.createVariable('init_atmosphere_no2', 'f4', ('z',),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_no2.setncattr('lod', 1)
-            _val_init_atmosphere_no2.setncattr('units','ppm')
-
-            _val_init_atmosphere_o3 = outfile.createVariable('init_atmosphere_o3', 'f4', ('z',),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_o3.setncattr('lod', 1)
-            _val_init_atmosphere_o3.setncattr('units','ppm')
-
-            _val_init_atmosphere_pm10 = outfile.createVariable('init_atmosphere_pm10', 'f4', ('z',),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_pm10.setncattr('lod', 1)
-            _val_init_atmosphere_pm10.setncattr('units','kg/m3')
-
-            _val_init_atmosphere_pm2_5 = outfile.createVariable('init_atmosphere_pm2_5', 'f4', ('z',),
-                                                            fill_value=fillvalue_float)
-            _val_init_atmosphere_pm2_5.setncattr('lod', 1)
-            _val_init_atmosphere_pm2_5.setncattr('units','kg/m3')
-
-
-            # time dependent variables
+    # create dimensions (time and coordinates)
+    outfile.createDimension('time', dimtimes)
+    for _dim in zip(dimnames, dimsize_names):
+        outfile.createDimension(_dim[0], dimensions[_dim[1]])
+    # create variables (time and coordinates)
+    _val_times            = outfile.createVariable('time',"f4", ("time"))
+    _val_times[:]         = times_sec[:]
+    _val_z_levels         = outfile.createVariable('z',"f4", ("z"))
+    _val_z_levels[:]      = z_levels[:]
+    _val_z_levels_stag    = outfile.createVariable('zw',"f4", ("zw"))
+    _val_z_levels_stag[:] = z_levels_stag[:]
+    _val_z_soil_levels    = outfile.createVariable('zsoil',"f4", ("zsoil"))
+    _val_z_soil_levels[:] = z_soil_levels[:]
+    _val_y             = outfile.createVariable('y',"f4", ("y"))
+    _val_y[:]          = y[:]
+    _val_x             = outfile.createVariable('x',"f4", ("x"))
+    _val_x[:]          = x[:]
+    
+    # create all other variables in outout file
+    def add_interpDim(all_variables):
+        print('Adding dimensions to Dynamic Driver')
+        # surface pressure
+        _val_surface_forcing_surface_pressure = outfile.createVariable('surface_forcing_surface_pressure', "f4",("time"))
+        # geostrophic wind
+        _val_ls_forcing_ug = outfile.createVariable('ls_forcing_ug', "f4", ("time", "z"),fill_value=fillvalue_float)
+        _val_ls_forcing_vg = outfile.createVariable('ls_forcing_vg', "f4", ("time", "z"),fill_value=fillvalue_float)
+        # create variables in outfile for all variables
+        for var in all_variables:
+            if (var == 'pt' or var == 'qv'):
+                _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "y", "x"),fill_value=fillvalue_float)
+            elif (var == 'soil_m' or var == 'soil_t'):
+                _val_init_var = outfile.createVariable('init_'+ var,"f4", ("zsoil", "y", "x"),fill_value=fillvalue_float)
+            elif var == 'u':
+                _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "y", "xu"),fill_value=fillvalue_float)
+            elif var == 'v':
+                _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "yv", "x"),fill_value=fillvalue_float)
+            elif var == 'w':
+                _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("zw", "y", "x"),fill_value=fillvalue_float)
+            else:
+                _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4",('z',),fill_value=fillvalue_float)
+            # add attributes
+            if var in atmos_var:
+                _val_init_var.setncattr('lod', 2)
+            else:
+                _val_init_var.setncattr('lod', 1)
+                if (var == 'PM10' or var == 'PM2_5_DRY'):
+                    _val_init_var.setncattr('units','kg/m3')
+                else:
+                    _val_init_var.setncattr('units','ppm')
+            # create time dependent variables        
             if not nested_domain:
-                # SURFACE PRESSURE
-                _val_surface_forcing_surface_pressure = outfile.createVariable('surface_forcing_surface_pressure', "f4",
-                                                                               ("time"))
-                # BOUNDARY - vertical slices from left, right, south, north, top
-                varname = 'pt'
-                _val_ls_forcing_pt_left = outfile.createVariable('ls_forcing_left_' + varname, "f4", ("time", "z", "y"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_pt_left.setncattr('lod', 2)
-                _val_ls_forcing_pt_right = outfile.createVariable('ls_forcing_right_' + varname, "f4", ("time", "z", "y"),
-                                                                  fill_value=fillvalue_float)
-                _val_ls_forcing_pt_right.setncattr('lod', 2)
-                _val_ls_forcing_pt_south = outfile.createVariable('ls_forcing_south_' + varname, "f4", ("time", "z", "x"),
-                                                                  fill_value=fillvalue_float)
-                _val_ls_forcing_pt_south.setncattr('lod', 2)
-                _val_ls_forcing_pt_north = outfile.createVariable('ls_forcing_north_' + varname, "f4", ("time", "z", "x"),
-                                                                  fill_value=fillvalue_float)
-                _val_ls_forcing_pt_north.setncattr('lod', 2)
-                _val_ls_forcing_pt_top = outfile.createVariable('ls_forcing_top_' + varname, "f4", ("time", "y", "x"),
-                                                                fill_value=fillvalue_float)
-                _val_ls_forcing_pt_top.setncattr('lod', 2)
+                if (var == 'soil_m' or var == 'soil_t'):
+                    continue
+                else:
+                    for side in boundary:
+                        if (side == 'left' or side == 'right'):
+                            if var == 'u':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),fill_value=fillvalue_float)
+                            elif var == 'v':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "yv"),fill_value=fillvalue_float)
+                            elif var == 'w':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "y"),fill_value=fillvalue_float)
+                            else:
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),fill_value=fillvalue_float)
 
-                varname = 'qv'
-                _val_ls_forcing_qv_left = outfile.createVariable('ls_forcing_left_' + varname, "f4", ("time", "z", "y"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_qv_left.setncattr('lod', 2)
-                _val_ls_forcing_qv_right = outfile.createVariable('ls_forcing_right_' + varname, "f4", ("time", "z", "y"),
-                                                                  fill_value=fillvalue_float)
-                _val_ls_forcing_qv_right.setncattr('lod', 2)
-                _val_ls_forcing_qv_south = outfile.createVariable('ls_forcing_south_' + varname, "f4", ("time", "z", "x"),
-                                                                  fill_value=fillvalue_float)
-                _val_ls_forcing_qv_south.setncattr('lod', 2)
-                _val_ls_forcing_qv_north = outfile.createVariable('ls_forcing_north_' + varname, "f4", ("time", "z", "x"),
-                                                                  fill_value=fillvalue_float)
-                _val_ls_forcing_qv_north.setncattr('lod', 2)
-                _val_ls_forcing_qv_top = outfile.createVariable('ls_forcing_top_' + varname, "f4", ("time", "y", "x"),
-                                                                fill_value=fillvalue_float)
-                _val_ls_forcing_qv_top.setncattr('lod', 2)
+                        elif (side == 'south' or side == 'north'):
+                            if var == 'u':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "xu"),fill_value=fillvalue_float)
+                            elif var == 'v':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),fill_value=fillvalue_float)
+                            elif var == 'w':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "x"),fill_value=fillvalue_float)
+                            else:
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),fill_value=fillvalue_float)
+                        else:
+                            if var == 'u':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "xu"),fill_value=fillvalue_float)
+                            elif var == 'v':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "yv", "x"),fill_value=fillvalue_float)
+                            elif var == 'w':
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),fill_value=fillvalue_float)
+                            else:
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),fill_value=fillvalue_float)
+                        # atrributes
+                        _val_ls_forcing.setncattr('lod', 2)
+                        if var not in atmos_var:
+                            if (var == 'PM10' or var == 'PM2_5_DRY'):
+                                _val_ls_forcing.setncattr('units', 'kg/m3')
+                            else:
+                                _val_ls_forcing.setncattr('units', 'ppm')
+        # close output file                        
+        outfile.close()
+    # create all other variables in outout file
+    add_interpDim(all_variables)
+    
+    # read interpolated files and write values to outfile
+    def add_interpValues(all_variables):
+        print('\nAdding initializing variable values to Dynamic Driver')
+        infile = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
+        outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
+        # initialization variables
+        for var in all_variables:
+            if (var == 'soil_m' or var == 'soil_t'):
+                init_var = infile.variables['init_'+var]
+                _val_init_var = outfile.variables['init_'+var]
+            else:
+                init_var = infile.variables['init_atmosphere_'+ var]
+                _val_init_var = outfile.variables['init_atmosphere_'+ var]
+            # write values
+            if (var == 'pt' or var == 'qv' or var == 'w' or var == 'soil_t'):
+                _val_init_var[:, :, :] = init_var[0, :, :, :]
+            elif var == 'u':
+                _val_init_var[:, :, :] = init_var[0, :, :, 1:]
+            elif var == 'v':
+                _val_init_var[:, :, :] = init_var[0, :, 1:, :]
+            elif var == 'soil_m':
+                for k in range(0,_val_init_var.shape[0]):
+                    _val_init_var[k, :, :] = init_var[0, k, :, :] * sma[:, :]
+            if var in wrfchem_spec:
+                _val_init_var[:] = init_var[0,:,:,:].mean(axis=(1,2))
+        infile.close()
+        outfile.close()
 
-                varname = 'u'
-                _val_ls_forcing_u_left = outfile.createVariable('ls_forcing_left_' + varname, "f4", ("time", "z", "y"),
-                                                                fill_value=fillvalue_float)
-                _val_ls_forcing_u_left.setncattr('lod', 2)
-                _val_ls_forcing_u_right = outfile.createVariable('ls_forcing_right_' + varname, "f4", ("time", "z", "y"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_u_right.setncattr('lod', 2)
-                _val_ls_forcing_u_south = outfile.createVariable('ls_forcing_south_' + varname, "f4", ("time", "z", "xu"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_u_south.setncattr('lod', 2)
-                _val_ls_forcing_u_north = outfile.createVariable('ls_forcing_north_' + varname, "f4", ("time", "z", "xu"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_u_north.setncattr('lod', 2)
-                _val_ls_forcing_u_top = outfile.createVariable('ls_forcing_top_' + varname, "f4", ("time", "y", "xu"),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_u_top.setncattr('lod', 2)
-
-                varname = 'v'
-                _val_ls_forcing_v_left = outfile.createVariable('ls_forcing_left_' + varname, "f4", ("time", "z", "yv"),
-                                                                fill_value=fillvalue_float)
-                _val_ls_forcing_v_left.setncattr('lod', 2)
-                _val_ls_forcing_v_right = outfile.createVariable('ls_forcing_right_' + varname, "f4", ("time", "z", "yv"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_v_right.setncattr('lod', 2)
-                _val_ls_forcing_v_south = outfile.createVariable('ls_forcing_south_' + varname, "f4", ("time", "z", "x"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_v_south.setncattr('lod', 2)
-                _val_ls_forcing_v_north = outfile.createVariable('ls_forcing_north_' + varname, "f4", ("time", "z", "x"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_v_north.setncattr('lod', 2)
-                _val_ls_forcing_v_top = outfile.createVariable('ls_forcing_top_' + varname, "f4", ("time", "yv", "x"),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_v_top.setncattr('lod', 2)
-
-                varname = 'w'
-                _val_ls_forcing_w_left = outfile.createVariable('ls_forcing_left_' + varname, "f4", ("time", "zw", "y"),
-                                                                fill_value=fillvalue_float)
-                _val_ls_forcing_w_left.setncattr('lod', 2)
-                _val_ls_forcing_w_right = outfile.createVariable('ls_forcing_right_' + varname, "f4", ("time", "zw", "y"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_w_right.setncattr('lod', 2)
-                _val_ls_forcing_w_south = outfile.createVariable('ls_forcing_south_' + varname, "f4", ("time", "zw", "x"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_w_south.setncattr('lod', 2)
-                _val_ls_forcing_w_north = outfile.createVariable('ls_forcing_north_' + varname, "f4", ("time", "zw", "x"),
-                                                                 fill_value=fillvalue_float)
-                _val_ls_forcing_w_north.setncattr('lod', 2)
-                _val_ls_forcing_w_top = outfile.createVariable('ls_forcing_top_' + varname, "f4", ("time", "y", "x"),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_w_top.setncattr('lod', 2)
-
-                # chemistry
-                varname = 'no'
-                _val_ls_forcing_no_left  = outfile.createVariable('ls_forcing_left_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no_left.setncattr('lod', 2)
-                _val_ls_forcing_no_left.setncattr('units','ppm')
-                _val_ls_forcing_no_right = outfile.createVariable('ls_forcing_right_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no_right.setncattr('lod', 2)
-                _val_ls_forcing_no_right.setncattr('units','ppm')
-                _val_ls_forcing_no_south = outfile.createVariable('ls_forcing_south_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no_south.setncattr('lod', 2)
-                _val_ls_forcing_no_south.setncattr('units','ppm')
-                _val_ls_forcing_no_north = outfile.createVariable('ls_forcing_north_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no_north.setncattr('lod', 2)
-                _val_ls_forcing_no_north.setncattr('units','ppm')
-                _val_ls_forcing_no_top   = outfile.createVariable('ls_forcing_top_'+varname,'f4', ('time','y','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no_top.setncattr('lod', 2)
-                _val_ls_forcing_no_top.setncattr('units','ppm')
-
-                varname = 'no2'
-                _val_ls_forcing_no2_left  = outfile.createVariable('ls_forcing_left_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no2_left.setncattr('lod', 2)
-                _val_ls_forcing_no2_left.setncattr('units','ppm')
-                _val_ls_forcing_no2_right = outfile.createVariable('ls_forcing_right_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no2_right.setncattr('lod', 2)
-                _val_ls_forcing_no2_right.setncattr('units','ppm')
-                _val_ls_forcing_no2_south = outfile.createVariable('ls_forcing_south_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no2_south.setncattr('lod', 2)
-                _val_ls_forcing_no2_south.setncattr('units','ppm')
-                _val_ls_forcing_no2_north = outfile.createVariable('ls_forcing_north_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no2_north.setncattr('lod', 2)
-                _val_ls_forcing_no2_north.setncattr('units','ppm')
-                _val_ls_forcing_no2_top   = outfile.createVariable('ls_forcing_top_'+varname,'f4', ('time','y','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_no2_top.setncattr('lod', 2)
-                _val_ls_forcing_no2_top.setncattr('units','ppm')
-
-                varname = 'o3'
-                _val_ls_forcing_o3_left  = outfile.createVariable('ls_forcing_left_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_o3_left.setncattr('lod', 2)
-                _val_ls_forcing_o3_left.setncattr('units','ppm')
-                _val_ls_forcing_o3_right = outfile.createVariable('ls_forcing_right_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_o3_right.setncattr('lod', 2)
-                _val_ls_forcing_o3_right.setncattr('units','ppm')
-                _val_ls_forcing_o3_south = outfile.createVariable('ls_forcing_south_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_o3_south.setncattr('lod', 2)
-                _val_ls_forcing_o3_south.setncattr('units','ppm')
-                _val_ls_forcing_o3_north = outfile.createVariable('ls_forcing_north_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_o3_north.setncattr('lod', 2)
-                _val_ls_forcing_o3_north.setncattr('units','ppm')
-                _val_ls_forcing_o3_top   = outfile.createVariable('ls_forcing_top_'+varname,'f4', ('time','y','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_o3_top.setncattr('lod', 2)
-                _val_ls_forcing_o3_top.setncattr('units','ppm')
-
-                varname = 'pm10'
-                _val_ls_forcing_pm10_left  = outfile.createVariable('ls_forcing_left_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm10_left.setncattr('lod', 2)
-                _val_ls_forcing_pm10_left.setncattr('units','kg/m3')
-                _val_ls_forcing_pm10_right = outfile.createVariable('ls_forcing_right_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm10_right.setncattr('lod', 2)
-                _val_ls_forcing_pm10_right.setncattr('units','kg/m3')
-                _val_ls_forcing_pm10_south = outfile.createVariable('ls_forcing_south_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm10_south.setncattr('lod', 2)
-                _val_ls_forcing_pm10_south.setncattr('units','kg/m3')
-                _val_ls_forcing_pm10_north = outfile.createVariable('ls_forcing_north_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm10_north.setncattr('lod', 2)
-                _val_ls_forcing_pm10_north.setncattr('units','kg/m3')
-                _val_ls_forcing_pm10_top   = outfile.createVariable('ls_forcing_top_'+varname,'f4', ('time','y','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm10_top.setncattr('lod', 2)
-                _val_ls_forcing_pm10_top.setncattr('units','kg/m3')
-
-                varname = 'pm2_5'
-                _val_ls_forcing_pm2_5_left  = outfile.createVariable('ls_forcing_left_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm2_5_left.setncattr('lod', 2)
-                _val_ls_forcing_pm2_5_left.setncattr('units','kg/m3')
-                _val_ls_forcing_pm2_5_right = outfile.createVariable('ls_forcing_right_'+varname,'f4', ('time','z','y'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm2_5_right.setncattr('lod', 2)
-                _val_ls_forcing_pm2_5_right.setncattr('units','kg/m3')
-                _val_ls_forcing_pm2_5_south = outfile.createVariable('ls_forcing_south_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm2_5_south.setncattr('lod', 2)
-                _val_ls_forcing_pm2_5_south.setncattr('units','kg/m3')
-                _val_ls_forcing_pm2_5_north = outfile.createVariable('ls_forcing_north_'+varname,'f4', ('time','z','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm2_5_north.setncattr('lod', 2)
-                _val_ls_forcing_pm2_5_north.setncattr('units','kg/m3')
-                _val_ls_forcing_pm2_5_top   = outfile.createVariable('ls_forcing_top_'+varname,'f4', ('time','y','x'),
-                                                               fill_value=fillvalue_float)
-                _val_ls_forcing_pm2_5_top.setncattr('lod', 2)
-                _val_ls_forcing_pm2_5_top.setncattr('units','kg/m3')
-
-                # geostrophic wind
-                _val_ls_forcing_ug = outfile.createVariable('ls_forcing_ug', "f4", ("time", "z"),
-                                                            fill_value=fillvalue_float)
-                _val_ls_forcing_vg = outfile.createVariable('ls_forcing_vg', "f4", ("time", "z"),
-                                                            fill_value=fillvalue_float)
-
-                time.sleep(1)
-
-            # write values for initialization variables
-            _val_init_atmosphere_pt[:, :, :] = init_atmosphere_pt[0, :, :, :]
-            _val_init_atmosphere_qv[:, :, :] = init_atmosphere_qv[0, :, :, :]
-            _val_init_atmosphere_u[:, :, :]  = init_atmosphere_u[0, :, :, 1:]
-            _val_init_atmosphere_v[:, :, :]  = init_atmosphere_v[0, :, 1:, :]
-            _val_init_atmosphere_w[:, :, :]  = init_atmosphere_w[0, :, :, :]
-            _val_init_soil_t[:, :, :]        = init_soil_t[0, :, :, :]
-            for k in range(0,_val_init_soil_m.shape[0]):
-                # adjust soil moisture according soil_moisture_adjust field (if exists)
-                _val_init_soil_m[k, :, :] = init_soil_m[0, k, :, :] * sma[:, :]
-            # chemistry
-            _val_init_atmosphere_no[:]    = init_atmosphere_no[0,:,:,:].mean(axis=(1,2))
-            _val_init_atmosphere_no2[:]   = init_atmosphere_no2[0,:,:,:].mean(axis=(1,2))
-            _val_init_atmosphere_o3[:]    = init_atmosphere_o3[0,:,:,:].mean(axis=(1,2))
-            _val_init_atmosphere_pm10[:]  = init_atmosphere_pm10[0,:,:,:].mean(axis=(1,2))
-            _val_init_atmosphere_pm2_5[:] = init_atmosphere_pm2_5[0,:,:,:].mean(axis=(1,2))
-
-        finally:
-            # close interpolated file
-            infile.close()
-        #
+        # time dependent variables (all time steps)
         if not nested_domain:
-            # cycle over all included time steps
+            print('\nAdding time dependent variables value to Dynamic Driver')
+            outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
             for ts in range(0, len(interp_files)):
-                print("Processing file",interp_files[ts])
-                # open corresponding interpolated file
+                # geostrophic wind
+                print('Open wrf file: '+wrf_files[ts])
+                nc_wrf = netCDF4.Dataset(wrf_files[ts], 'r')
+                ug, vg = palm_wrf_gw(nc_wrf, lon_center, lat_center, z_levels)
+                _val_ls_forcing_ug = outfile.variables['ls_forcing_ug']
+                _val_ls_forcing_vg = outfile.variables['ls_forcing_vg']
+                _val_ls_forcing_ug = ug
+                _val_ls_forcing_vg = vg
+                nc_wrf.close()
+
+                print("Processing interpolated file: ",interp_files[ts])
                 infile = netCDF4.Dataset(interp_files[ts], "r", format="NETCDF4")
-                try:
-                    # open variables in the input file
-                    init_atmosphere_pt = infile.variables['init_atmosphere_pt']
-                    init_atmosphere_qv = infile.variables['init_atmosphere_qv']
-                    init_atmosphere_u  = infile.variables['init_atmosphere_u']
-                    init_atmosphere_v  = infile.variables['init_atmosphere_v']
-                    init_atmosphere_w  = infile.variables['init_atmosphere_w']
-                    surface_forcing_surface_pressure = infile.variables['surface_forcing_surface_pressure']
-                    # chemistry
-                    init_atmosphere_no    = infile.variables['init_atmosphere_no']
-                    init_atmosphere_no2   = infile.variables['init_atmosphere_no2']
-                    init_atmosphere_o3    = infile.variables['init_atmosphere_o3']
-                    init_atmosphere_pm10  = infile.variables['init_atmosphere_pm10']
-                    init_atmosphere_pm2_5 = infile.variables['init_atmosphere_pm2_5']
+                # surface pressure
+                surface_forcing_surface_pressure = infile.variables['surface_forcing_surface_pressure']
+                _val_surface_forcing_surface_pressure = outfile.variables['surface_forcing_surface_pressure']
+                _val_surface_forcing_surface_pressure[ts] = np.average(surface_forcing_surface_pressure[:,:,:], axis = (1,2))[0]
+                # all other variables except soil_t, soli_m, u, v, w
+                #['pt', 'qv', 'u', 'v', 'w', 'soil_m', 'soil_t', 'no', 'no2', 'o3', 'PM10', 'PM2_5_DRY']
+                for var in all_variables:
+                    if (var == 'soil_m' or var == 'soil_t' or var == 'u' or var == 'v' or var == 'w'):
+                        continue
+                    else:
+                        init_var= infile.variables['init_atmosphere_'+ var]
+                        for side in boundary:
+                            _val_ls_forcing_var = outfile.variables['ls_forcing_'+ side +'_'+var]
+                            if side == 'left':
+                                _val_ls_forcing_var[ts, :, :] = init_var[0, :, :, 0]
+                            elif side == 'right':
+                                _val_ls_forcing_var[ts, :, :] = init_var[0, :, :, dimensions['xdim'] - 1]
+                            elif side == 'south':
+                                _val_ls_forcing_var[ts, :, :] = init_var[0, :, 0, :]
+                            elif side == 'north':
+                                _val_ls_forcing_var[ts, :, :] = init_var[0, :, dimensions['ydim'] - 1, :]
+                            elif side == 'top':
+                                _val_ls_forcing_var[ts, :, :] = init_var[0, dimensions['zdim'] - 1, :, :]
+                
+                # variables:u, v, w - mass balancing
+                init_atmosphere_u  = infile.variables['init_atmosphere_u']
+                init_atmosphere_v  = infile.variables['init_atmosphere_v']
+                init_atmosphere_w  = infile.variables['init_atmosphere_w']
 
-                    # write values for time dependent values
-                    # surface pressure
-                    _val_surface_forcing_surface_pressure[ts] = np.average(surface_forcing_surface_pressure[:,:,:], axis = (1,2))[0]
-                    # boundary conditions
-                    _val_ls_forcing_pt_left[ts, :, :]  = init_atmosphere_pt[0, :, :, 0]
-                    _val_ls_forcing_pt_right[ts, :, :] = init_atmosphere_pt[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_pt_south[ts, :, :] = init_atmosphere_pt[0, :, 0, :]
-                    _val_ls_forcing_pt_north[ts, :, :] = init_atmosphere_pt[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_pt_top[ts, :, :]   = init_atmosphere_pt[0, dimensions['zdim'] - 1, :, :]
-
-                    _val_ls_forcing_qv_left[ts, :, :]  = init_atmosphere_qv[0, :, :, 0]
-                    _val_ls_forcing_qv_right[ts, :, :] = init_atmosphere_qv[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_qv_south[ts, :, :] = init_atmosphere_qv[0, :, 0, :]
-                    _val_ls_forcing_qv_north[ts, :, :] = init_atmosphere_qv[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_qv_top[ts, :, :]   = init_atmosphere_qv[0, dimensions['zdim'] - 1, :, :]
-
-                    _val_ls_forcing_no_left[ts, :, :]  = init_atmosphere_no[0, :, :, 0]
-                    _val_ls_forcing_no_right[ts, :, :] = init_atmosphere_no[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_no_south[ts, :, :] = init_atmosphere_no[0, :, 0, :]
-                    _val_ls_forcing_no_north[ts, :, :] = init_atmosphere_no[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_no_top[ts, :, :]   = init_atmosphere_no[0, dimensions['zdim'] - 1, :, :]
-                    
-                    # chemistry
-                    _val_ls_forcing_no2_left[ts, :, :]  = init_atmosphere_no2[0, :, :, 0]
-                    _val_ls_forcing_no2_right[ts, :, :] = init_atmosphere_no2[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_no2_south[ts, :, :] = init_atmosphere_no2[0, :, 0, :]
-                    _val_ls_forcing_no2_north[ts, :, :] = init_atmosphere_no2[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_no2_top[ts, :, :]   = init_atmosphere_no2[0, dimensions['zdim'] - 1, :, :]
-
-                    _val_ls_forcing_o3_left[ts, :, :]  = init_atmosphere_o3[0, :, :, 0]
-                    _val_ls_forcing_o3_right[ts, :, :] = init_atmosphere_o3[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_o3_south[ts, :, :] = init_atmosphere_o3[0, :, 0, :]
-                    _val_ls_forcing_o3_north[ts, :, :] = init_atmosphere_o3[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_o3_top[ts, :, :]   = init_atmosphere_o3[0, dimensions['zdim'] - 1, :, :]
-
-                    _val_ls_forcing_pm10_left[ts, :, :]  = init_atmosphere_pm10[0, :, :, 0]
-                    _val_ls_forcing_pm10_right[ts, :, :] = init_atmosphere_pm10[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_pm10_south[ts, :, :] = init_atmosphere_pm10[0, :, 0, :]
-                    _val_ls_forcing_pm10_north[ts, :, :] = init_atmosphere_pm10[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_pm10_top[ts, :, :]   = init_atmosphere_pm10[0, dimensions['zdim'] - 1, :, :]
-
-                    _val_ls_forcing_pm2_5_left[ts, :, :]  = init_atmosphere_pm2_5[0, :, :, 0]
-                    _val_ls_forcing_pm2_5_right[ts, :, :] = init_atmosphere_pm2_5[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_pm2_5_south[ts, :, :] = init_atmosphere_pm2_5[0, :, 0, :]
-                    _val_ls_forcing_pm2_5_north[ts, :, :] = init_atmosphere_pm2_5[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_pm2_5_top[ts, :, :]   = init_atmosphere_pm2_5[0, dimensions['zdim'] - 1, :, :]
-
-                    # Perform mass balancing
-                    uxleft  = init_atmosphere_u[0, :, :, 0]
-                    uxright = init_atmosphere_u[0, :, :, dimensions['xdim'] - 1]
-                    vysouth = init_atmosphere_v[0, :, 0, :]
-                    vynorth = init_atmosphere_v[0, :, dimensions['ydim'] - 1, :]
-                    wztop = init_atmosphere_w[0, dimensions['zwdim'] - 1, :, :]
-                    mass_disbalance = ((uxleft * areas_xb).sum()
+                uxleft  = init_atmosphere_u[0, :, :, 0]
+                uxright = init_atmosphere_u[0, :, :, dimensions['xdim'] - 1]
+                vysouth = init_atmosphere_v[0, :, 0, :]
+                vynorth = init_atmosphere_v[0, :, dimensions['ydim'] - 1, :]
+                wztop   = init_atmosphere_w[0, dimensions['zwdim'] - 1, :, :]
+                mass_disbalance = ((uxleft * areas_xb).sum()
                         - (uxright * areas_xb).sum()
                         + (vysouth * areas_yb).sum()
                         - (vynorth * areas_yb).sum()
                         - (wztop * areas_zb).sum())
-                    mass_corr_v = mass_disbalance / area_boundaries
-                    print('Mass disbalance: {0:8g} m3/s (avg = {1:8g} m/s)'.format(
-                        mass_disbalance, mass_corr_v))
-                    uxleft -= mass_corr_v
-                    uxright += mass_corr_v
-                    vysouth -= mass_corr_v
-                    vynorth += mass_corr_v
-                    wztop += mass_corr_v
+                mass_corr_v = mass_disbalance / area_boundaries
+                print('Mass disbalance: {0:8g} m3/s (avg = {1:8g} m/s)'.format(mass_disbalance, mass_corr_v))
+                uxleft  -= mass_corr_v
+                uxright += mass_corr_v
+                vysouth -= mass_corr_v
+                vynorth += mass_corr_v
+                wztop   += mass_corr_v
+                
+                _val_ls_forcing_u_left  = outfile.variables['ls_forcing_left_u']
+                _val_ls_forcing_u_right = outfile.variables['ls_forcing_right_u']
+                _val_ls_forcing_u_south = outfile.variables['ls_forcing_south_u']
+                _val_ls_forcing_u_north = outfile.variables['ls_forcing_north_u']
+                _val_ls_forcing_u_top   = outfile.variables['ls_forcing_top_u']
 
-                    # Verify mass balance (optional)
-                    #mass_disbalance = ((uxleft * areas_xb).sum()
-                    #    - (uxright * areas_xb).sum()
-                    #    + (vysouth * areas_yb).sum()
-                    #    - (vynorth * areas_yb).sum()
-                    #    - (wztop * areas_zb).sum())
-                    #mass_corr_v = mass_disbalance / area_boundaries
-                    #print('Mass balanced:   {0:8g} m3/s (avg = {1:8g} m/s)'.format(
-                    #    mass_disbalance, mass_corr_v))
+                _val_ls_forcing_u_left[ts, :, :] = uxleft
+                _val_ls_forcing_u_right[ts, :, :] = uxright
+                _val_ls_forcing_u_south[ts, :, :] = init_atmosphere_u[0, :, 0, 1:]
+                _val_ls_forcing_u_north[ts, :, :] = init_atmosphere_u[0, :, dimensions['ydim'] - 1, 1:]
+                _val_ls_forcing_u_top[ts, :, :] = init_atmosphere_u[0, dimensions['zdim'] - 1, :, 1:]
 
-                    _val_ls_forcing_u_left[ts, :, :] = uxleft
-                    _val_ls_forcing_u_right[ts, :, :] = uxright
-                    _val_ls_forcing_u_south[ts, :, :] = init_atmosphere_u[0, :, 0, 1:]
-                    _val_ls_forcing_u_north[ts, :, :] = init_atmosphere_u[0, :, dimensions['ydim'] - 1, 1:]
-                    _val_ls_forcing_u_top[ts, :, :] = init_atmosphere_u[0, dimensions['zdim'] - 1, :, 1:]
+                _val_ls_forcing_v_left  = outfile.variables['ls_forcing_left_v']
+                _val_ls_forcing_v_right = outfile.variables['ls_forcing_right_v']
+                _val_ls_forcing_v_south = outfile.variables['ls_forcing_south_v']
+                _val_ls_forcing_v_north = outfile.variables['ls_forcing_north_v']
+                _val_ls_forcing_v_top   = outfile.variables['ls_forcing_top_v']
 
-                    _val_ls_forcing_v_left[ts, :, :] = init_atmosphere_v[0, :, 1:, 0]
-                    _val_ls_forcing_v_right[ts, :, :] = init_atmosphere_v[0, :, 1:, dimensions['xdim'] - 1]
-                    _val_ls_forcing_v_south[ts, :, :] = vysouth
-                    _val_ls_forcing_v_north[ts, :, :] = vynorth
-                    _val_ls_forcing_v_top[ts, :, :] = init_atmosphere_v[0, dimensions['zdim'] - 1, 1:, :]
+                _val_ls_forcing_v_left[ts, :, :] = init_atmosphere_v[0, :, 1:, 0]
+                _val_ls_forcing_v_right[ts, :, :] = init_atmosphere_v[0, :, 1:, dimensions['xdim'] - 1]
+                _val_ls_forcing_v_south[ts, :, :] = vysouth
+                _val_ls_forcing_v_north[ts, :, :] = vynorth
+                _val_ls_forcing_v_top[ts, :, :] = init_atmosphere_v[0, dimensions['zdim'] - 1, 1:, :]
 
-                    _val_ls_forcing_w_left[ts, :, :] = init_atmosphere_w[0, :, :, 0]
-                    _val_ls_forcing_w_right[ts, :, :] = init_atmosphere_w[0, :, :, dimensions['xdim'] - 1]
-                    _val_ls_forcing_w_south[ts, :, :] = init_atmosphere_w[0, :, 0, :]
-                    _val_ls_forcing_w_north[ts, :, :] = init_atmosphere_w[0, :, dimensions['ydim'] - 1, :]
-                    _val_ls_forcing_w_top[ts, :, :] = wztop
+                _val_ls_forcing_w_left  = outfile.variables['ls_forcing_left_w']
+                _val_ls_forcing_w_right = outfile.variables['ls_forcing_right_w']
+                _val_ls_forcing_w_south = outfile.variables['ls_forcing_south_w']
+                _val_ls_forcing_w_north = outfile.variables['ls_forcing_north_w']
+                _val_ls_forcing_w_top   = outfile.variables['ls_forcing_top_w']
 
-                finally:
-                    # close interpolated file
-                    infile.close()
+                _val_ls_forcing_w_left[ts, :, :] = init_atmosphere_w[0, :, :, 0]
+                _val_ls_forcing_w_right[ts, :, :] = init_atmosphere_w[0, :, :, dimensions['xdim'] - 1]
+                _val_ls_forcing_w_south[ts, :, :] = init_atmosphere_w[0, :, 0, :]
+                _val_ls_forcing_w_north[ts, :, :] = init_atmosphere_w[0, :, dimensions['ydim'] - 1, :]
+                _val_ls_forcing_w_top[ts, :, :] = wztop
 
-                # write geostrophic wind
-                print('Open wrf file '+wrf_files[ts])
-                nc_wrf = netCDF4.Dataset(wrf_files[ts], 'r')
-                try:
-                    ug, vg = palm_wrf_gw(nc_wrf, lon_center, lat_center, z_levels)
-                    _val_ls_forcing_ug[ts, :] = ug
-                    _val_ls_forcing_vg[ts, :] = vg
-                finally:
-                    nc_wrf.close()
+                infile.close()
+            outfile.close()
 
+    # read interpolated files and write values to outfile
+    add_interpValues(all_variables)
 
-        if len(rad_times_proc) > 0:
-            # process radiation inputs
-            # radiation time dimension and variable
-            outfile.createDimension('time_rad', len(rad_times_proc))
-            _val_times =  outfile.createVariable('time_rad',"f4", ("time_rad"))
-            _val_times[:] = rad_times_proc[:]
-            # radiation variables
-            var = outfile.createVariable('rad_sw_in', "f4", ("time_rad"), fill_value=fillvalue_float)
-            var.setncattr('lod', 1)
-            var.units = 'W/m2'
-            var[:] = rad_values_proc[0][:]
-            var = outfile.createVariable('rad_lw_in', "f4", ("time_rad"), fill_value=fillvalue_float)
-            var.setncattr('lod', 1)
-            var.units = 'W/m2'
-            var[:] = rad_values_proc[1][:]
-            var = outfile.createVariable('rad_sw_in_dif', "f4", ("time_rad"), fill_value=fillvalue_float)
-            var.setncattr('lod', 1)
-            var.units = 'W/m2'
-            var[:] = rad_values_proc[2][:]
+    # add radiation input
+    if len(rad_times_proc) > 0:
+        outfile = netCDF4.Dataset(dynamic_driver_file, "a", format="NETCDF4")
+        # radiation time dimension and variable
+        outfile.createDimension('time_rad', len(rad_times_proc))
+        _val_times =  outfile.createVariable('time_rad',"f4", ("time_rad"))
+        _val_times[:] = rad_times_proc[:]
+        # radiation variables
+        var = outfile.createVariable('rad_sw_in', "f4", ("time_rad"), fill_value=fillvalue_float)
+        var.setncattr('lod', 1)
+        var.units = 'W/m2'
+        var[:] = rad_values_proc[0][:]
+        var = outfile.createVariable('rad_lw_in', "f4", ("time_rad"), fill_value=fillvalue_float)
+        var.setncattr('lod', 1)
+        var.units = 'W/m2'
+        var[:] = rad_values_proc[1][:]
+        var = outfile.createVariable('rad_sw_in_dif', "f4", ("time_rad"), fill_value=fillvalue_float)
+        var.setncattr('lod', 1)
+        var.units = 'W/m2'
+        var[:] = rad_values_proc[2][:]
 
-    finally:
         outfile.close()
+
+    # correct chemical species names to PALM output
+    outfile = netCDF4.Dataset(dynamic_driver_file, "a", format="NETCDF4")
+    if 'PM2_5_DRY' in all_variables:
+        outfile.renameVariable('init_atmosphere_PM2_5_DRY','init_atmosphere_pm2_5')
+        outfile.renameVariable('ls_forcing_left_PM2_5_DRY', 'ls_forcing_left_pm2_5')
+        outfile.renameVariable('ls_forcing_right_PM2_5_DRY','ls_forcing_right_pm2_5')
+        outfile.renameVariable('ls_forcing_south_PM2_5_DRY','ls_forcing_south_pm2_5')
+        outfile.renameVariable('ls_forcing_north_PM2_5_DRY','ls_forcing_north_pm2_5')
+        outfile.renameVariable('ls_forcing_top_PM2_5_DRY','ls_forcing_top_pm2_5')
+    if 'PM10' in all_variables:
+        outfile.renameVariable('init_atmosphere_PM10','init_atmosphere_pm10')
+        outfile.renameVariable('ls_forcing_left_PM10', 'ls_forcing_left_pm10')
+        outfile.renameVariable('ls_forcing_right_PM10','ls_forcing_right_pm10')
+        outfile.renameVariable('ls_forcing_south_PM10','ls_forcing_south_pm10')
+        outfile.renameVariable('ls_forcing_north_PM10','ls_forcing_north_pm10')
+        outfile.renameVariable('ls_forcing_top_PM10','ls_forcing_top_pm10')
+    outfile.close()
