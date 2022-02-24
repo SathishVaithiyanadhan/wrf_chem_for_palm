@@ -364,44 +364,24 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     # zsoil is taken from wrf - not need to define it
     # ======================== CHEMISTRY ===================================================
     # convert wrf-chem units to PALM units
-    #NO:ppmv to ppm
-    no_mixing_raw = nc_infile.variables['no'][0]
-    no_mixing_raw = np.r_[no_mixing_raw[0:1], no_mixing_raw]
-    no_mixing = interpolate_1d(z_levels, height, no_mixing_raw)
-    vdata = nc_outfile.createVariable('init_atmosphere_no',"f4", ("Time", "z","south_north","west_east"))
-    vdata[0,:,:,:] = no_mixing
+    # convert ppmv to ppm for PALM except PM10 & PM2_5_DRY: micrograms m-3 to kg/m3
 
-    #NO2: ppmv to ppm
-    no2_mixing_raw = nc_infile.variables['no2'][0]
-    no2_mixing_raw = np.r_[no2_mixing_raw[0:1], no2_mixing_raw]
-    no2_mixing = interpolate_1d(z_levels, height, no2_mixing_raw)
-    vdata = nc_outfile.createVariable('init_atmosphere_no2',"f4", ("Time", "z","south_north","west_east"))
-    vdata[0,:,:,:] = no2_mixing
+    def chem_from_wrfchem(wrfchem_spec):
+        for spec in wrfchem_spec:
+            chem_data_raw  = nc_infile.variables[spec][0]
+            chem_data_raw  = np.r_[chem_data_raw[0:1], chem_data_raw]
+            if (spec == 'PM10' or spec == 'PM2_5_DRY'):
+                chem_data  = interpolate_1d(z_levels, height, (chem_data_raw)*1e-9)
+            else:
+                chem_data  = interpolate_1d(z_levels, height, chem_data_raw)
+            vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
+            vdata[0,:,:,:] = chem_data
+        
+        nc_infile.close()
+        nc_wrf.close()
+        nc_outfile.close()
 
-    #O3:ppmv to ppm
-    o3_mixing_raw = nc_infile.variables['o3'][0]
-    o3_mixing_raw = np.r_[o3_mixing_raw[0:1], o3_mixing_raw]
-    o3_mixing = interpolate_1d(z_levels, height, o3_mixing_raw)
-    vdata = nc_outfile.createVariable('init_atmosphere_o3',"f4", ("Time", "z","south_north","west_east"))
-    vdata[0,:,:,:] = o3_mixing
-
-    #PM10: micrograms m-3 to kg/m3
-    pm10_raw = nc_infile.variables['PM10'][0]
-    pm10_raw = np.r_[pm10_raw[0:1], pm10_raw]
-    pm10_mass = interpolate_1d(z_levels, height, (pm10_raw)*1e-9)
-    vdata = nc_outfile.createVariable('init_atmosphere_pm10',"f4", ("Time", "z","south_north","west_east"))
-    vdata[0,:,:,:] = pm10_mass
-
-    #PM2_5_DRY: micrograms m-3 to kg/m3
-    pm2_5_raw = nc_infile.variables['PM2_5_DRY'][0]
-    pm2_5_raw = np.r_[pm2_5_raw[0:1], pm2_5_raw]
-    pm2_5_mass = interpolate_1d(z_levels, height, (pm2_5_raw)*1e-9)
-    vdata = nc_outfile.createVariable('init_atmosphere_pm2_5',"f4", ("Time", "z","south_north","west_east"))
-    vdata[0,:,:,:] = pm2_5_mass
-
-    nc_infile.close()
-    nc_wrf.close()
-    nc_outfile.close()
+    chem_from_wrfchem(wrfchem_spec)
 
 def palm_wrf_gw(f, lon, lat, levels, tidx=0):
     '''Calculate geostrophic wind from WRF using metpy'''
