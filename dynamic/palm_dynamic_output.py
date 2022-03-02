@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 #------------------------------------------------------------------------------#
 #
 # Scripts for processing of WRF-CHEM files to PALM dynamic driver.
@@ -10,7 +9,6 @@
 This file creates and writes the dynamic driver netcdf file based on preprepared
 transformed and interpolated wrf-chem files.
 '''
-
 import os
 import time
 import numpy as np
@@ -115,32 +113,44 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     for side in boundary:
                         if (side == 'left' or side == 'right'):
                             if var == 'u':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),
+                                        fill_value=fillvalue_float)
                             elif var == 'v':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "yv"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "yv"),
+                                        fill_value=fillvalue_float)
                             elif var == 'w':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "y"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "y"),
+                                        fill_value=fillvalue_float)
                             else:
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),
+                                        fill_value=fillvalue_float)
 
                         elif (side == 'south' or side == 'north'):
                             if var == 'u':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "xu"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "xu"),
+                                        fill_value=fillvalue_float)
                             elif var == 'v':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),
+                                        fill_value=fillvalue_float)
                             elif var == 'w':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "x"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "x"),
+                                        fill_value=fillvalue_float)
                             else:
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),
+                                        fill_value=fillvalue_float)
                         else:
                             if var == 'u':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "xu"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "xu"),
+                                        fill_value=fillvalue_float)
                             elif var == 'v':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "yv", "x"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "yv", "x"),
+                                        fill_value=fillvalue_float)
                             elif var == 'w':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),
+                                        fill_value=fillvalue_float)
                             else:
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),fill_value=fillvalue_float)
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),
+                                        fill_value=fillvalue_float)
                         # atrributes
                         _val_ls_forcing.setncattr('lod', 2)
                         if var not in atmos_var:
@@ -148,7 +158,6 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                                 _val_ls_forcing.setncattr('units', 'kg/m3')
                             else:
                                 _val_ls_forcing.setncattr('units', 'ppm')
-        # close output file                        
         outfile.close()
     # create all other variables in outout file
     add_interpDim(all_variables)
