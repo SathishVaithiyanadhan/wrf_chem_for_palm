@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 #------------------------------------------------------------------------------#
 #
 # Scripts for processing of WRF-CHEM files to PALM dynamic driver.
@@ -30,11 +29,9 @@ from datetime import datetime, timedelta
 import numpy as np
 from pyproj import Proj,Transformer,transform, CRS
 import glob
-
 import netCDF4
 
 import palm_dynamic_config
-
 ##################################
 # read configuration from command
 # line and parse it
@@ -52,7 +49,6 @@ if sys.argv[0].endswith('pydevconsole.py'):
 else:
     try:
         opts, args = getopt.getopt(sys.argv[1:],"hc:w)",["help=","config=","write="])
-        #print(opts)
     except getopt.GetoptError as err:
         print("Error:", err)
         print_help()
@@ -77,15 +73,12 @@ if configname == '':
 palm_dynamic_config.configure(configname)
 # Import values (including loaded) from config module into globals
 from palm_dynamic_config import *
-
 # Other modules are imported *AFTER* the config module has been filled with
 # values (so that they can correctly import * from palm_dynamic_config).
 import palm_wrf_utils
 from palm_dynamic_output import palm_dynamic_output
 
-
-print('')
-print('Domain name: ', domain)
+print('\nDomain name: ', domain)
 print('Resolution name: ', resolution)
 print('Scenario name: ', scenario)
 print('Read domain from static:', grid_from_static)
@@ -95,12 +88,9 @@ print('WRF-CHEM file path:', wrf_dir_name)
 print('WRF-CHEM: dynamics file mask:', wrf_file_mask)
 print('Simulation start time:', origin_time)
 print('Simulation hours:', simulation_hours)
-
-
 ###########################
 # domain parameters
-print('')
-print('Domain parameters')
+print('\nDomain parameters:')
 if grid_from_static:
     # get parameters of the horizontal domain from PALM STATIC driver
     try:
@@ -197,7 +187,6 @@ terrain = terrain_rel + origin_z
 
 # print domain parameters and check ist existence in caso of setup from config
 try:
-    print('Domain parameters:')
     print('nx, ny, nz:', nx, ny, nz)
     print('dx, dy, dz:', dx, dy, dz)
     print('origin_x, origin_y:', origin_x, origin_y)
@@ -248,28 +237,23 @@ for i in range(nz-1):
     if z_levels[i+1] + dzs >= dz_stretch_level:
         dzs = min(dzs * dz_stretch_factor, dz_max)
 ztop = z_levels[-1] + dzs / 2.
-#print('z:',z_levels)
-#print('zw:',z_levels_stag)
-
 ######################################
 # get time extent of the PALM simulation
 ######################################
-print('')
 # get complete list of wrf files
 wrf_file_list = glob.glob(os.path.join(wrf_dir_name, wrf_file_mask))
 # get simulation origin and final time as datetime
 start_time = datetime.strptime(origin_time, '%Y-%m-%d %H:%M:%S')
 end_time = start_time + timedelta(hours=simulation_hours)
 end_time_rad = end_time
-print('PALM simulation extent', start_time, end_time, simulation_hours)
+print('\nPALM simulation extent', start_time, end_time, simulation_hours)
 if nested_domain:
     print('Nested domain - process only initialization.')
     print('Set end_time = start_time')
     end_time = start_time
 
 # get wrf times and sort wrf files by time
-print('')
-print('Analyse WRF files dates:')
+print('\nAnalyse WRF files dates:')
 file_times = []
 for wrf_file in wrf_file_list:
     #print('WRF file',wrf_file)
@@ -313,7 +297,6 @@ for wf in wrf_files[start_index:end_index+1]:
     wrf_files_proc.append(wf)
 # id of process files
 simul_id = domain + "_d" + resolution
-
 ######################################
 #VERTICAL AND HORIZONTAL INTERPOLATION
 ######################################
@@ -331,8 +314,7 @@ finally:
     nc_wrf.close()
 print('Hydro variables in wrf files:', '+'.join(shvars))
 
-print(" ")
-print('Start of vertical and horizontal interpolation of inputs to the PALM domain.')
+print('\nStart of vertical and horizontal interpolation of inputs to the PALM domain.')
 interp_files = []
 regridder = None
 for wrf_file in wrf_files_proc:
@@ -375,7 +357,9 @@ for wrf_file in wrf_files_proc:
                 f_out.createDimension('south_north', len(jrange))
 
                 # copied vars
-                for varname in 'PH PHB HGT T W TSLB SMOIS MU MUB P PB PSFC no no2 o3 PM10 PM2_5_DRY'.split():
+                wrfchem_dynamic = ['PH', 'PHB', 'HGT', 'T', 'W', 'TSLB', 'SMOIS', 'MU', 'MUB','P', 'PB', 'PSFC']
+                wrfchem_variables = wrfchem_dynamic + wrfchem_spec
+                for varname in wrfchem_variables:
                     v_wrf = f_wrf.variables[varname]
                     v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
                     v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
@@ -493,7 +477,6 @@ if radiation_from_wrf:
 else:
     rad_times_proc = []
     rad_values_proc = []
-
 # ===================== CREATE NETCDF DRIVER ==============================
 # calculate relative times from simulation start
 times_sec = []
