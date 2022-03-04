@@ -20,6 +20,7 @@ from metpy.interpolate import interpolate_1d, log_interpolate_1d
 from metpy.units import units
 
 from palm_dynamic_config import *
+import palm_dynamic_aerosol
 
 # Constants directly equivalent to WRF code
 radius = 6370000.0
@@ -29,13 +30,16 @@ rd_cp = 2./7. #from WRF v4 technote (R_d / c_p)
 wrf_base_temp = 300. #NOT wrfout T00
 
 _ax = np.newaxis
+if aerosol_wrfchem:
+    # Calculate aerosol bin overlaps
+    open_bin, overlap_ratio =  palm_dynamic_aerosol.aerosol_binoverlap(reglim, wrfchem_bin_limits)
+    open_bin =  sorted(set(open_bin), key=open_bin.index)
 
 class WRFCoordTransform(object):
     'Coordinate transformer for WRFOUT files'
 
     def __init__(self, ncf):
         attr = lambda a: getattr(ncf, a)
-
         # Define grids
         # see http://www.pkrc.net/wrf-lambert.html
         #latlon_wgs84 = pyproj.Proj(proj='latlong',
@@ -215,7 +219,7 @@ def calc_gp(f, ph):
     return np.array(gp)
 
 def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
-        z_soil_levels, origin_z, terrain, wrf_hybrid_levs, vinterp_terrain_smoothing):
+        z_soil_levels, origin_z, terrain, wrf_hybrid_levs, vinterp_terrain_smoothing,nz,ny,nx):
 
     zdim = len(z_levels)
     zwdim = len(z_levels_stag)
@@ -279,7 +283,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
 
     # Report
     gpdelta = gpf2 - gpf
-    print('GP deltas by level:')
+    #print('GP deltas by level:')
     # Changed here
     #for k in range(gpf.shape[0]):
         #print_dstat(k, gpdelta[k])
@@ -363,9 +367,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
 
     # zsoil is taken from wrf - not need to define it
     # ======================== CHEMISTRY ===================================================
-    # convert wrf-chem units to PALM units
     # convert ppmv to ppm for PALM except PM10 & PM2_5_DRY: micrograms m-3 to kg/m3
-
     def chem_from_wrfchem(wrfchem_spec):
         for spec in wrfchem_spec:
             chem_data_raw  = nc_infile.variables[spec][0]
@@ -377,11 +379,91 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
             vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
             vdata[0,:,:,:] = chem_data
         
-        nc_infile.close()
-        nc_wrf.close()
-        nc_outfile.close()
-
     chem_from_wrfchem(wrfchem_spec)
+    # ======================== AEROSOLS =====================================
+    # aerosol_mass_fraction
+    def aerosol_mass_wrfchem(listspec,open_bin, overlap_ratio):
+        var_aero = palm_dynamic_aerosol.translate_aerosol_species(listspec[0]).split(",")
+        var_size = nc_infile.variables[var_aero[0]+'_a01'].shape[0]
+        # by species & sub-species
+        for spec in listspec:
+            val_specout = np.zeros((var_size))
+            spec_wrf = palm_dynamic_aerosol.translate_aerosol_species(spec).split(",")
+            # by aerosol-size bin
+            naero = 0
+            for aero_bin in open_bin:
+                val_specint = np.zeros((var_size))
+                # interpolate sub-species & sum
+                for nsp in spec_wrf:
+                    inval_spec  = nc_infile.variables[nsp + aero_bin][0]
+                    inval_spec  = np.r_[inval_spec[0:1], inval_spec]
+                    inval_spec  = interpolate_1d(z_levels, height, inval_spec)
+                    val_specint = val_specint + inval_spec
+                # factor for size-bin size
+                val_specint = val_specint*(sum(overlap_ratio[:,naero]))
+                val_specout = val_specout + val_specint
+                naero = naero + 1
+            # write interp(sum) to file
+            vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
+            vdata[0,:,:,:] = val_specout
+
+        ## open wrfchem variable: species, bin, sub-species
+        #var_aero = palm_dynamic_aerosol.translate_aerosol_species(listspec[0]).split(",")
+        #var_size = nc_infile.variables[var_aero[0]+'_a01'].shape[0]
+        ## for each aerosol and size bin, weight for size bins and sum sub-species
+        #for spec in listspec:
+        #    val_specout = np.zeros((var_size))
+        #    spec_wrf = palm_dynamic_aerosol.translate_aerosol_species(spec).split(",")
+        #    # by aerosol-size bin
+        #    naero = 0
+        #    for aero_bin in open_bin:
+        #        # sum aersol sub-species
+        #        val_spec = np.zeros((var_size))
+        #        for nsp in spec_wrf:
+        #            inval_spec = nc_infile.variables[nsp + aero_bin][0]
+        #            val_spec = val_spec + inval_spec
+        #        # weight for aerosol size bins
+        #        val_spec = val_spec*(sum(overlap_ratio[:,naero]))
+        #        # combine aerosol size bins
+        #        val_specout =  val_spec
+        #        naero = naero + 1
+        #    # interpolate & write to interp file
+        #    val_specout = np.r_[val_specout[0:1], val_specout]
+        #    val_specout  = interpolate_1d(z_levels, height, val_specout)
+        #    vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
+        #    vdata[0,:,:,:] = val_specout
+
+    def aerosol_concen_wrfchem(listspec):
+        alt_data_raw = nc_infile.variables['ALT'][0]
+        alt_data_raw = np.r_[alt_data_raw[0:1], alt_data_raw]
+        alt_data = interpolate_1d(z_levels, height, alt_data_raw)
+        vdata          = nc_outfile.createVariable('init_atmosphere_alt', "f4",("Time", "z", "south_north", "west_east"))
+        vdata[0,:,:,:] = alt_data
+        # by size bin
+        for ab in range(1,5):
+            # by species & sub-species
+            spec_wrf = []
+            for spec in listspec:
+                _wrf = palm_dynamic_aerosol.translate_aerosol_species(spec).split(",")
+                spec_wrf.extend(_wrf)
+            # interpolate & sum
+            val_specout = np.zeros((nz,ny,nx))
+            for wspec in spec_wrf:
+                inval_spec     = nc_infile.variables[wspec +'_a0'+ str(ab)][0]
+                inval_spec     = np.r_[inval_spec[0:1], inval_spec]
+                inval_specint  = interpolate_1d(z_levels, height, inval_spec)
+                val_specout    = val_specout + inval_specint
+            # write to .interp file
+            vdata          = nc_outfile.createVariable('init_aerosol_a0'+ str(ab), "f4",("Time", "z", "south_north", "west_east"))
+            vdata[0,:,:,:] = val_specout
+    # include aerosols
+    if aerosol_wrfchem:
+        aerosol_mass_wrfchem(listspec, open_bin, overlap_ratio)
+        aerosol_concen_wrfchem(listspec)
+
+    nc_infile.close()
+    nc_wrf.close()
+    nc_outfile.close()
 
 def palm_wrf_gw(f, lon, lat, levels, tidx=0):
     '''Calculate geostrophic wind from WRF using metpy'''
