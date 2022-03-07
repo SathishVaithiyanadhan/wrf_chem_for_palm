@@ -32,9 +32,9 @@ import glob
 import netCDF4
 
 import palm_dynamic_config
+import palm_dynamic_aerosol
 ##################################
 # read configuration from command
-# line and parse it
 def print_help():
     print()
     print(__doc__)
@@ -73,8 +73,16 @@ if configname == '':
 palm_dynamic_config.configure(configname)
 # Import values (including loaded) from config module into globals
 from palm_dynamic_config import *
-# Other modules are imported *AFTER* the config module has been filled with
-# values (so that they can correctly import * from palm_dynamic_config).
+# Load all aerosol chemical species
+if aerosol_wrfchem:
+    wrfchem_aerosols = []
+    for aero in listspec:
+        _aero = palm_dynamic_aerosol.translate_aerosol_species(aero).split(",")
+        for _aeros in _aero:
+            wrfchem_aerosols.append(_aeros+ '_a01')
+            wrfchem_aerosols.append(_aeros+ '_a02')
+            wrfchem_aerosols.append(_aeros+ '_a03')
+            wrfchem_aerosols.append(_aeros+ '_a04')
 import palm_wrf_utils
 from palm_dynamic_output import palm_dynamic_output
 
@@ -88,6 +96,10 @@ print('WRF-CHEM file path:', wrf_dir_name)
 print('WRF-CHEM: dynamics file mask:', wrf_file_mask)
 print('Simulation start time:', origin_time)
 print('Simulation hours:', simulation_hours)
+if aerosol_wrfchem:
+    print('\nNumber of aerosol size bins in subranges (nbin): ', nbin)
+    print('Aerosol diameter limits of subrnages (reglim): ', reglim)
+    print('Aerosol chemical components (listspec): ', listspec)
 ###########################
 # domain parameters
 print('\nDomain parameters:')
@@ -173,7 +185,6 @@ if grid_from_static:
     ncs.close()
 else:
     #TODO check all necessary parameters are set and are correct
-    #
     # initialize necessary arrays
     try:
         terrain = np.zeros(shape=(ny, nx), dtype=float)
@@ -359,6 +370,10 @@ for wrf_file in wrf_files_proc:
                 # copied vars
                 wrfchem_dynamic = ['PH', 'PHB', 'HGT', 'T', 'W', 'TSLB', 'SMOIS', 'MU', 'MUB','P', 'PB', 'PSFC']
                 wrfchem_variables = wrfchem_dynamic + wrfchem_spec
+                if aerosol_wrfchem:
+                    wrfchem_variables = wrfchem_variables + wrfchem_aerosols
+                    wrfchem_variables.append('ALT')
+
                 for varname in wrfchem_variables:
                     v_wrf = f_wrf.variables[varname]
                     v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
@@ -384,7 +399,7 @@ for wrf_file in wrf_files_proc:
         print('Vertical interpolation...')
         palm_wrf_utils.palm_wrf_vertical_interp(hinterp_file, vinterp_file, wrf_file, z_levels,
                                                 z_levels_stag, z_soil_levels, origin_z, terrain,
-                                                wrf_hybrid_levs, vinterp_terrain_smoothing)
+                                                wrf_hybrid_levs, vinterp_terrain_smoothing, nz, ny, nx)
 
 if radiation_from_wrf:
     print('Start processing of radiation inputs from the WRF radiation files.')
