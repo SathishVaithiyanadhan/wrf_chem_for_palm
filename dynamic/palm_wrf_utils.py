@@ -407,32 +407,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
             vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
             vdata[0,:,:,:] = val_specout
 
-        ## open wrfchem variable: species, bin, sub-species
-        #var_aero = palm_dynamic_aerosol.translate_aerosol_species(listspec[0]).split(",")
-        #var_size = nc_infile.variables[var_aero[0]+'_a01'].shape[0]
-        ## for each aerosol and size bin, weight for size bins and sum sub-species
-        #for spec in listspec:
-        #    val_specout = np.zeros((var_size))
-        #    spec_wrf = palm_dynamic_aerosol.translate_aerosol_species(spec).split(",")
-        #    # by aerosol-size bin
-        #    naero = 0
-        #    for aero_bin in open_bin:
-        #        # sum aersol sub-species
-        #        val_spec = np.zeros((var_size))
-        #        for nsp in spec_wrf:
-        #            inval_spec = nc_infile.variables[nsp + aero_bin][0]
-        #            val_spec = val_spec + inval_spec
-        #        # weight for aerosol size bins
-        #        val_spec = val_spec*(sum(overlap_ratio[:,naero]))
-        #        # combine aerosol size bins
-        #        val_specout =  val_spec
-        #        naero = naero + 1
-        #    # interpolate & write to interp file
-        #    val_specout = np.r_[val_specout[0:1], val_specout]
-        #    val_specout  = interpolate_1d(z_levels, height, val_specout)
-        #    vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
-        #    vdata[0,:,:,:] = val_specout
-
     def aerosol_concen_wrfchem(listspec):
         alt_data_raw = nc_infile.variables['ALT'][0]
         alt_data_raw = np.r_[alt_data_raw[0:1], alt_data_raw]
