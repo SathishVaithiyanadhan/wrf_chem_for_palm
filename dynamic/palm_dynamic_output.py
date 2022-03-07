@@ -83,6 +83,17 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         outfile.createDimension('Dmid', sum(nbin))
         outfile.createDimension('composition_index', len(listspec))
         outfile.createDimension('max_string_length', 25)
+        # variables
+        val_dmid = outfile.createVariable('Dmid', "f4",('Dmid',))
+        val_dmid.setncattr('units', 'm')
+        _dmid, _bim = palm_dynamic_aerosol.define_bins(nbin, reglim)
+        _dmid = np.array(_dmid)
+        val_dmid[:] = _dmid[:]
+
+        val_idx = outfile.createVariable('composition_index', "i4", ('composition_index',))
+        for n in range(0, len(listspec)):
+            val_idx[n] = n+1
+
         # 2D vertical profile variables
         _val_composition_name    = outfile.createVariable('composition_name',"S1", ("composition_index", "max_string_length"))
         _val_composition_name.setncattr('long_name', "aerosol composition name")
