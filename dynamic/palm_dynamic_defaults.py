@@ -1,4 +1,3 @@
-
 # config template with config defaults
 # not a separate module, only sourced from palm_dynamic_config
 
@@ -11,7 +10,6 @@ nested_domain = False
 
 # file name of output dynamic driver ("" means the standard name)
 dynamic_driver_file = ""
-
 # import grid parameters for dynamic driver from static driver
 grid_from_static = True
 # file name of static driver ("" means the standard name)
@@ -40,10 +38,21 @@ wrf_hybrid_levs = True
 # Smoothing of PALM terrain for WRF vertical interpolation to avoid sharp
 # horizontal gradients. None = off
 vinterp_terrain_smoothing = None
+interp_dir_name = ""
 
 # wrf-chem input files path and default file mask
 wrf_dir_name = ""  # "" means that standard path will be calculated in the init
 wrf_file_mask =  "wrfout_d01_*"
+wrfchem_spec = ["no"]
+
+# aerosols
+aerosol_wrfchem = False
+wrfchem_bin_limits = [3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5]
+listspec = ['SO4']
+nbin = [1,7]
+reglim = [3.9e-8, 5.0e-8, 2.5e-6]
+nf2a = 1.0
+
 # process radiation from wrf, true to include
 radiation_from_wrf = False
 wrf_rad_file_mask = "auxhist6_*"
