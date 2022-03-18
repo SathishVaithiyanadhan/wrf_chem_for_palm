@@ -171,6 +171,8 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "yv", "x"),fill_value=fillvalue_float)
             elif var == 'w':
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("zw", "y", "x"),fill_value=fillvalue_float)
+            elif  var in wrfchem_spec:
+                _val_init_var = outfile.createVariable('init_atmosphere_'+ var.upper(), "f4", ("z",),fill_value=fillvalue_float)
             else:
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4",('z',),fill_value=fillvalue_float)
             # add attributes
@@ -249,6 +251,9 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
             if (var == 'soil_m' or var == 'soil_t'):
                 init_var = infile.variables['init_'+var]
                 _val_init_var = outfile.variables['init_'+var]
+            elif var in wrfchem_spec:
+                init_var = infile.variables['init_atmosphere_'+ var]
+                _val_init_var = outfile.variables['init_atmosphere_'+ var.upper()]
             else:
                 init_var = infile.variables['init_atmosphere_'+ var]
                 _val_init_var = outfile.variables['init_atmosphere_'+ var]
