@@ -267,7 +267,7 @@ if nested_domain:
 print('\nAnalyse WRF files dates:')
 file_times = []
 for wrf_file in wrf_file_list:
-    #print('WRF file',wrf_file)
+    #print('\nWRF file',wrf_file)
     # get real time from wrf file
     nc_wrf = netCDF4.Dataset(wrf_file, "r", format="NETCDF4")
     ta = nc_wrf.variables['Times'][:]
@@ -275,6 +275,8 @@ for wrf_file in wrf_file_list:
     td = datetime.strptime(t, '%Y-%m-%d_%H:%M:%S')
     print(os.path.basename(wrf_file), ': ', td)
     file_times.append((td,wrf_file))
+    nc_wrf.close()
+
 file_times.sort()
 times = []
 wrf_files = []
@@ -372,12 +374,27 @@ for wrf_file in wrf_files_proc:
                 wrfchem_variables = wrfchem_dynamic + wrfchem_spec
                 if aerosol_wrfchem:
                     wrfchem_variables = wrfchem_variables + wrfchem_aerosols
-                    wrfchem_variables.append('ALT')
+                    wrfchem_variables.append('ALT')   # inverse density
 
                 for varname in wrfchem_variables:
-                    v_wrf = f_wrf.variables[varname]
-                    v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
-                    v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                    # gaseous aerosols
+                    if varname == 'h2so4':
+                        v_wrf = f_wrf.variables['sulf']
+                        v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                    elif varname == 'ocnv':
+                        v_wrf = f_wrf.variables['gly']
+                        v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                    elif varname == 'ocsv':
+                        v_wrf = f_wrf.variables['hcho']
+                        v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                    else:
+                        # other dynamic & chem vars
+                        v_wrf = f_wrf.variables[varname]
+                        v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
 
                 # U and V have special treatment (unstaggering)
                 v_out = f_out.createVariable('U', 'f4', ('Time', 'bottom_top', 'south_north', 'west_east'))

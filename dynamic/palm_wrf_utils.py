@@ -365,14 +365,16 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     vdata = nc_outfile.createVariable('zw', "f4", ("zw"))
     vdata[:] = list (z_levels_stag) 
 
-    # zsoil is taken from wrf - not need to define it
+    # zsoil is taken from wrf - do not need to define it
     # ======================== CHEMISTRY ===================================================
     # convert ppmv to ppm for PALM except PM10 & PM2_5_DRY: micrograms m-3 to kg/m3
     def chem_from_wrfchem(wrfchem_spec):
         for spec in wrfchem_spec:
             chem_data_raw  = nc_infile.variables[spec][0]
             chem_data_raw  = np.r_[chem_data_raw[0:1], chem_data_raw]
+
             if (spec == 'PM10' or spec == 'PM2_5_DRY'):
+                chem_data_raw  = nc_infile.variables[spec][0]
                 chem_data  = interpolate_1d(z_levels, height, (chem_data_raw)*1e-9)
             else:
                 chem_data  = interpolate_1d(z_levels, height, chem_data_raw)
@@ -386,9 +388,9 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
         var_aero = palm_dynamic_aerosol.translate_aerosol_species(listspec[0]).split(",")
         var_size = nc_infile.variables[var_aero[0]+'_a01'].shape[0]
         # by species & sub-species
-        for spec in listspec:
+        for aerosol_spec in listspec:
             val_specout = np.zeros((var_size))
-            spec_wrf = palm_dynamic_aerosol.translate_aerosol_species(spec).split(",")
+            spec_wrf = palm_dynamic_aerosol.translate_aerosol_species(aerosol_spec).split(",")
             # by aerosol-size bin
             naero = 0
             for aero_bin in open_bin:
@@ -404,7 +406,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
                 val_specout = val_specout + val_specint
                 naero = naero + 1
             # write interp(sum) to file
-            vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
+            vdata          = nc_outfile.createVariable('init_atmosphere_'+ aerosol_spec,"f4",("Time", "z","south_north","west_east"))
             vdata[0,:,:,:] = val_specout
 
     def aerosol_concen_wrfchem(listspec):
