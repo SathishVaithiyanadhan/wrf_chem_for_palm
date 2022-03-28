@@ -39,7 +39,10 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     boundary = ['left','right','south', 'north','top']
     # atmospheric variables
     atmos_var = ['pt','qv','u','v','w','soil_m','soil_t']
-    dynam_chem_variables = atmos_var + wrfchem_spec
+    if len(wrfchem_spec) > 0:
+        dynam_chem_variables = atmos_var + wrfchem_spec
+    else:
+        dynam_chem_variables = atmos_var
 
     # prepare influx/outflux area sizes
     zstag_all = np.r_[0., z_levels_stag, ztop]

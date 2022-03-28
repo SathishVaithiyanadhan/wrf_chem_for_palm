@@ -42,8 +42,8 @@ interp_dir_name = ""
 
 # wrf-chem input files path and default file mask
 wrf_dir_name = ""  # "" means that standard path will be calculated in the init
-wrf_file_mask =  "wrfout_d01_*"
-wrfchem_spec = ["no"]
+wrf_file_mask = "wrfout_d01_*"
+wrfchem_spec = ""
 
 # aerosols
 aerosol_wrfchem = False
