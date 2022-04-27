@@ -283,10 +283,9 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
 
     # Report
     gpdelta = gpf2 - gpf
-    #print('GP deltas by level:')
-    # Changed here
-    #for k in range(gpf.shape[0]):
-        #print_dstat(k, gpdelta[k])
+    print('GP deltas by level:')
+    for k in range(gpf.shape[0]):
+        print_dstat(k, gpdelta[k])
 
     # Because we require levels below the lowest level from WRF, we will always
     # add one layer at zero level with repeated values from the lowest level.
@@ -308,7 +307,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     vdata = nc_outfile.createVariable('init_atmosphere_qv', "f4", ("Time", "z","south_north","west_east"))
     vdata[0,:,:,:] = init_atmosphere_qv
     # ======================= POTENTIAL TEMPERATURE ==========================
-    pt_raw = nc_infile.variables['T'][0] + 300.   # from perturbation pt to standard
+    pt_raw = nc_infile.variables['T'][0] + 290.    # from perturbation pt to standard (T00 wrf-chem variable)
     pt_raw = np.r_[pt_raw[0:1], pt_raw]
     init_atmosphere_pt = interpolate_1d(z_levels, height, pt_raw)
     

@@ -24,14 +24,14 @@ proj_wgs84 = 'EPSG:4326'
 # layer height (dz = 0.0 means dz is assigned from dx)
 dz = 0.0
 # we need description of the PALM vertical structure for dynamic driver
-nz = 80  # z in grids
-dz_stretch_level = 1200.0 # in meters
-dz_stretch_factor = 1.02
-dz_max = 60.0
+nz = 200  # z in grids
+dz_stretch_level = 5000.0 # in meters
+dz_stretch_factor = 1.0
+dz_max = 100.0
 
 # time origin and extent of the simulation (format YYYY-MM-DD hh:mm:ss)
 origin_time = ""
-simulation_hours = 2
+simulation_hours = 24
 
 # WRF related configurations
 wrf_hybrid_levs = True
