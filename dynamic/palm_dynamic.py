@@ -7,9 +7,6 @@
 #------------------------------------------------------------------------------#
 '''Scripts for processing of WRF-CHEM files to PALM dynamic driver.
 
-Usage: palm_dynamic -c <config_name> [-w]
-python3 palm_dynamic.py -c augsburg_validation_summer_10
-
 Script requires name of the configuration on command line.
 The corresponding case configuration files are placed in subdirectory
 "configuration" and the are named <config_name>.conf. The template
@@ -248,6 +245,8 @@ for i in range(nz-1):
     if z_levels[i+1] + dzs >= dz_stretch_level:
         dzs = min(dzs * dz_stretch_factor, dz_max)
 ztop = z_levels[-1] + dzs / 2.
+print('z:',z_levels)
+print('zw:',z_levels_stag)
 ######################################
 # get time extent of the PALM simulation
 ######################################

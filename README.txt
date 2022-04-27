@@ -107,10 +107,11 @@ origin_z            origin of the domain in the vertical direction
 -A variety of chemical species can be inlcuded.
 -Aerosols can be included and are weighted based on specified aerosol size bins
 
-# Latest update (Feb/March 2022)
+# Latest update (March/April 2022)
 -Any chemical specie from wrf-chem can be selected in the configuration file and will be 
 	included in the dynamic driver.
 -Extensive changes were made to palm_dynamic_output and palm_dynamic_config to accomdate
 	the changes above.
 -Resolved issue: missing horizontal interpolation of chemical species has been resolved.
--README file updated and new defaults included.
+-Default setting revised.
+-Base state temperature corrected to 290.
