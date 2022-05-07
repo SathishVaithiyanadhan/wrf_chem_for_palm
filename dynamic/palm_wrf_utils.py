@@ -255,7 +255,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
         target_terrain = ndimage.gaussian_filter(terrain, sigma=vinterp_terrain_smoothing, order=0)
     print('Morphing WRF terrain ({0} ~ {1}) to PALM terrain ({2} ~ {3})'.format(
         wrfterr.min(), wrfterr.max(), target_terrain.min(), target_terrain.max()))
-    print_dstat('terrain shift', wrfterr - target_terrain[:,:])
+    #print_dstat('terrain shift', wrfterr - target_terrain[:,:])
 
     # Load original dry air column pressure
     mu = nc_infile.variables['MUB'][0,:,:] + nc_infile.variables['MU'][0,:,:]
@@ -284,8 +284,8 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     # Report
     gpdelta = gpf2 - gpf
     print('GP deltas by level:')
-    for k in range(gpf.shape[0]):
-        print_dstat(k, gpdelta[k])
+    #for k in range(gpf.shape[0]):
+    #    print_dstat(k, gpdelta[k])
 
     # Because we require levels below the lowest level from WRF, we will always
     # add one layer at zero level with repeated values from the lowest level.
@@ -383,7 +383,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     chem_from_wrfchem(wrfchem_spec)
     # ======================== AEROSOLS =====================================
     # aerosol_mass_fraction
-    def aerosol_mass_wrfchem(listspec,open_bin, overlap_ratio):
+    def aerosol_mass_wrfchem(listspec, open_bin, overlap_ratio):
         var_aero = palm_dynamic_aerosol.translate_aerosol_species(listspec[0]).split(",")
         var_size = nc_infile.variables[var_aero[0]+'_a01'].shape[0]
         # by species & sub-species
@@ -614,15 +614,15 @@ if __name__ == '__main__':
         phf, phh = calc_ph_sigma(f, mu)
         gp_calc = calc_gp(f, phf)
         delta = gp_calc - gp
-        for lev in range(delta.shape[0]):
-            print_dstat(lev, delta[lev])
+        #for lev in range(delta.shape[0]):
+        #    print_dstat(lev, delta[lev])
 
         print('\nUsing hybrid:')
         phf, phh = calc_ph_hybrid(f, mu)
         gp_calc = calc_gp(f, phf)
         delta = gp_calc - gp
-        for lev in range(delta.shape[0]):
-            print_dstat(lev, delta[lev])
+        #for lev in range(delta.shape[0]):
+        #    print_dstat(lev, delta[lev])
 
         f.close()
     if args.camx:
