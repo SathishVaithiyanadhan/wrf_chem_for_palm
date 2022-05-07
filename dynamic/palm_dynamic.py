@@ -80,6 +80,7 @@ if aerosol_wrfchem:
             wrfchem_aerosols.append(_aeros+ '_a02')
             wrfchem_aerosols.append(_aeros+ '_a03')
             wrfchem_aerosols.append(_aeros+ '_a04')
+
 import palm_wrf_utils
 from palm_dynamic_output import palm_dynamic_output
 
@@ -245,8 +246,8 @@ for i in range(nz-1):
     if z_levels[i+1] + dzs >= dz_stretch_level:
         dzs = min(dzs * dz_stretch_factor, dz_max)
 ztop = z_levels[-1] + dzs / 2.
-print('z:',z_levels)
-print('zw:',z_levels_stag)
+#print('z:',z_levels)
+#print('zw:',z_levels_stag)
 ######################################
 # get time extent of the PALM simulation
 ######################################
@@ -267,7 +268,6 @@ print('\nAnalyse WRF files dates:')
 file_times = []
 for wrf_file in wrf_file_list:
     #print('\nWRF file',wrf_file)
-    # get real time from wrf file
     nc_wrf = netCDF4.Dataset(wrf_file, "r", format="NETCDF4")
     ta = nc_wrf.variables['Times'][:]
     t = ta.tobytes().decode("utf-8")
@@ -368,12 +368,15 @@ for wrf_file in wrf_files_proc:
                 f_out.createDimension('west_east', len(irange))
                 f_out.createDimension('south_north', len(jrange))
 
-                # copied vars
+                # atmospheric variables
                 wrfchem_dynamic = ['PH', 'PHB', 'HGT', 'T', 'W', 'TSLB', 'SMOIS', 'MU', 'MUB','P', 'PB', 'PSFC']
+                # if chemical species are included
                 if len(wrfchem_spec)>0:
                     wrfchem_variables = wrfchem_dynamic + wrfchem_spec
                 else:
                     wrfchem_variables = wrfchem_dynamic
+
+                # if aerosol species are included
                 if aerosol_wrfchem:
                     wrfchem_variables = wrfchem_variables + wrfchem_aerosols
                     wrfchem_variables.append('ALT')   # inverse density
@@ -406,7 +409,7 @@ for wrf_file in wrf_files_proc:
                         v_out = f_out.createVariable(varname, 'f4', svoc_data.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
                     else:
-                        # other dynamic & chem vars
+                        # other dynamical & chemical variables
                         v_wrf = f_wrf.variables[varname]
                         v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])

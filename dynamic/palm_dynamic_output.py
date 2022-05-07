@@ -79,13 +79,14 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     #---------------------------------------------------------------------------
     # include aerosols, add dimensions and variables
     if aerosol_wrfchem:
-        # upwind values for aerosol concen and mass frac
-        aero_massfrac_a, aero_con = palm_dynamic_aerosol.aerosolProfile(interp_files, listspec, nbin, reglim, wrfchem_bin_limits)
-
         # create dimensions
         outfile.createDimension('Dmid', sum(nbin))
-        outfile.createDimension('composition_index', len(listspec))
+
+        # include for gaseous aerosols from chemistry
+        idx_len = len(listspec) + 5
+        outfile.createDimension('composition_index', idx_len)
         outfile.createDimension('max_string_length', 25)
+
         # variables
         val_dmid = outfile.createVariable('Dmid', "f4",('Dmid',))
         val_dmid.setncattr('units', 'm')
@@ -94,14 +95,23 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         val_dmid[:] = _dmid[:]
 
         val_idx = outfile.createVariable('composition_index', "i4", ('composition_index',))
-        for n in range(0, len(listspec)):
+        for n in range(0, idx_len):
             val_idx[n] = n+1
 
         # 2D vertical profile variables
         _val_composition_name    = outfile.createVariable('composition_name',"S1", ("composition_index", "max_string_length"))
         _val_composition_name.setncattr('long_name', "aerosol composition name")
-        composition_name         = np.array([listspec],dtype = 'S25')
+        spec_name =  listspec
+        spec_name.append('H2SO4')
+        spec_name.append('HNO3')
+        spec_name.append('NH3')
+        spec_name.append('OCNV')
+        spec_name.append('OCSV')
+        composition_name         = np.array([spec_name],dtype = 'S25')
         _val_composition_name[:] = netCDF4.stringtochar(composition_name)
+
+        # upwind values for aerosol concen and mass frac
+        aero_massfrac_a, aero_con = palm_dynamic_aerosol.aerosolProfile(interp_files, listspec, nbin, reglim, wrfchem_bin_limits)
 
         _val_aerosol_mass_a      = outfile.createVariable('init_atmosphere_mass_fracs_a', "f4", ("z", "composition_index"),fill_value=fillvalue_float)
         _val_aerosol_mass_a.setncattr('long_name',"initial mass fraction profile: a bins")
@@ -174,7 +184,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "yv", "x"),fill_value=fillvalue_float)
             elif var == 'w':
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("zw", "y", "x"),fill_value=fillvalue_float)
-            elif  var in wrfchem_spec:
+            elif var in wrfchem_spec:
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var.upper(), "f4", ("z",),fill_value=fillvalue_float)
             else:
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4",('z',),fill_value=fillvalue_float)
@@ -195,43 +205,52 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     for side in boundary:
                         if (side == 'left' or side == 'right'):
                             if var == 'u':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "z", "y"),
                                         fill_value=fillvalue_float)
                             elif var == 'v':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "yv"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "z", "yv"),
                                         fill_value=fillvalue_float)
                             elif var == 'w':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "y"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "zw", "y"),
+                                        fill_value=fillvalue_float)
+                            elif var in wrfchem_spec:
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var.upper(), "f4", ("time", "z", "y"),
                                         fill_value=fillvalue_float)
                             else:
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "y"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "z", "y"),
                                         fill_value=fillvalue_float)
 
                         elif (side == 'south' or side == 'north'):
                             if var == 'u':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "xu"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "z", "xu"),
                                         fill_value=fillvalue_float)
                             elif var == 'v':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "z", "x"),
                                         fill_value=fillvalue_float)
                             elif var == 'w':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "zw", "x"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "zw", "x"),
+                                        fill_value=fillvalue_float)
+                            elif var in wrfchem_spec:
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var.upper(), "f4", ("time", "z", "x"),
                                         fill_value=fillvalue_float)
                             else:
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "z", "x"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "z", "x"),
                                         fill_value=fillvalue_float)
                         else:
                             if var == 'u':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "xu"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "y", "xu"),
                                         fill_value=fillvalue_float)
                             elif var == 'v':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "yv", "x"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "yv", "x"),
                                         fill_value=fillvalue_float)
                             elif var == 'w':
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "y", "x"),
+                                        fill_value=fillvalue_float)
+                            elif var in wrfchem_spec:
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var.upper(), "f4", ("time", "y", "x"),
                                         fill_value=fillvalue_float)
                             else:
-                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+var, "f4", ("time", "y", "x"),
+                                _val_ls_forcing = outfile.createVariable('ls_forcing_'+ side +'_'+ var, "f4", ("time", "y", "x"),
                                         fill_value=fillvalue_float)
                         # atrributes
                         _val_ls_forcing.setncattr('lod', 2)
@@ -301,7 +320,10 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     if (var == 'soil_m' or var == 'soil_t' or var == 'u' or var == 'v' or var == 'w'):
                         continue
                     else:
-                        init_var= infile.variables['init_atmosphere_'+ var]
+                        if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv'):
+                            var = var.upper()
+
+                        init_var= infile.variables['init_atmosphere_'+ var.lower()]
                         for side in boundary:
                             _val_ls_forcing_var = outfile.variables['ls_forcing_'+ side +'_'+var]
                             if side == 'left':
