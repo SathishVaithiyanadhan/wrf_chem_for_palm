@@ -66,19 +66,25 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     # create variables (time and coordinates)
     _val_times            = outfile.createVariable('time',"f4", ("time"))
     _val_times[:]         = times_sec[:]
+
     _val_z_levels         = outfile.createVariable('z',"f4", ("z"))
     _val_z_levels[:]      = z_levels[:]
+
     _val_z_levels_stag    = outfile.createVariable('zw',"f4", ("zw"))
     _val_z_levels_stag[:] = z_levels_stag[:]
+
     _val_z_soil_levels    = outfile.createVariable('zsoil',"f4", ("zsoil"))
     _val_z_soil_levels[:] = z_soil_levels[:]
+
     _val_y             = outfile.createVariable('y',"f4", ("y"))
     _val_y[:]          = y[:]
+
     _val_x             = outfile.createVariable('x',"f4", ("x"))
     _val_x[:]          = x[:]
     #---------------------------------------------------------------------------
     # include aerosols, add dimensions and variables
     if aerosol_wrfchem:
+        print('Adding aerosol variables')
         # create dimensions
         outfile.createDimension('Dmid', sum(nbin))
 
@@ -111,8 +117,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         _val_composition_name[:] = netCDF4.stringtochar(composition_name)
 
         # upwind values for aerosol concen and mass frac
-        aero_massfrac_a, aero_con = palm_dynamic_aerosol.aerosolProfile(interp_files, listspec, nbin, reglim, wrfchem_bin_limits)
-
+        aero_massfrac_a          = palm_dynamic_aerosol.aerosolProfileMass(interp_files, listspec)
         _val_aerosol_mass_a      = outfile.createVariable('init_atmosphere_mass_fracs_a', "f4", ("z", "composition_index"),fill_value=fillvalue_float)
         _val_aerosol_mass_a.setncattr('long_name',"initial mass fraction profile: a bins")
         _val_aerosol_mass_a[:,:] = aero_massfrac_a
@@ -124,11 +129,13 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         elif nf2a <= 1.0:
             _val_aerosol_mass_b[:,:] = 1 - aero_massfrac_a
 
-        _val_aerosol_con = outfile.createVariable('init_atmosphere_aerosol', "f4", ("z","Dmid"),fill_value=fillvalue_float)
+        # aerosol concen.#
+        aero_concen = palm_dynamic_aerosol.aerosolProfileConc(interp_files, nbin, reglim, wrfchem_bin_limits)
+        _val_aerosol_con = outfile.createVariable('init_atmosphere_aerosol', "f4", ("z", "Dmid"), fill_value = fillvalue_float)
         _val_aerosol_con.setncattr('lod', 1)
         _val_aerosol_con.setncattr('long_name',"initial vertical profile of aerosol concentration")
         _val_aerosol_con.setncattr('units',"#/m3")
-        _val_aerosol_con = aero_con
+        _val_aerosol_con[:,:] = aero_concen
 
         # time dependent variables - aerosols
         for side in boundary:
@@ -146,27 +153,28 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     fill_value=fillvalue_float)
             _var_a.setncattr('lod', 1)
             _var_a.setncattr('long_name', "boundary conditions of mass fraction profile: a bins")
-            _var_a = palm_dynamic_aerosol.aerosolMassWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, listspec, side)
+            _var_a[:,:,:,:] = palm_dynamic_aerosol.aerosolMassWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, listspec, side)
 
             _var_b = outfile.createVariable('ls_forcing_'+ side + '_mass_fracs_b', "f4", ("time", _dim1, _dim2, "composition_index"),
                     fill_value=fillvalue_float)
             _var_b.setncattr('lod', 1)
             _var_b.setncattr('long_name', "boundary conditions of mass fraction profile: b bins")
             if (nf2a >= 1.0):
-                _var_b = 0
+                _var_b[:,:,:,:] = 0
             elif (nf2a < 1.0):
-                _var_b = 1-_var_a
+                _var_b[:,:,:,:] = 1-_var_a
+
             # aerosol concen.#
             _var_con = outfile.createVariable('ls_forcing_'+ side + '_aerosol', "f4", ("time", _dim1, _dim2, "Dmid"),
                     fill_value=fillvalue_float)
             _var_con.setncattr('lod', 1)
             _var_con.setncattr('long_name',"boundary condition of aerosol concentration")
-            _var_con = palm_dynamic_aerosol.aerosolConWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, side, nbin, reglim, wrfchem_bin_limits)
-         
+            _var_con[:,:,:,:] = palm_dynamic_aerosol.aerosolConWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, side, nbin, reglim, wrfchem_bin_limits)
+
     #---------------------------------------------------------------------------
     # create dynamical & chemical variables in output
     def add_interpDim(dynam_chem_variables):
-        print('Adding dimensions to Dynamic Driver')
+        print('Adding dynamical variables')
         # surface pressure
         _val_surface_forcing_surface_pressure = outfile.createVariable('surface_forcing_surface_pressure', "f4",("time"))
         # geostrophic wind
@@ -259,13 +267,15 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                                 _val_ls_forcing.setncattr('units', 'kg/m3')
                             else:
                                 _val_ls_forcing.setncattr('units', 'ppm')
-        outfile.close()
+        #outfile.close()
     # function - create dynamical & chemical variables
     add_interpDim(dynam_chem_variables)
+
+    outfile.close()
     
     # read interpolated files and write values for dynamical & chemical variables
     def add_interpValues(dynam_chem_variables):
-        print('Adding initializing variable values to Dynamic Driver')
+        print('Adding initializing variables to Dynamic Driver')
         infile = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
         outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
         # initialization variables
@@ -296,7 +306,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
 
         # time dependent variables - dynamical & chemical variables
         if not nested_domain:
-            print('\nAdding time dependent variables value to Dynamic Driver')
+            print('\nAdding time dependent variables to Dynamic Driver')
             outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
             for ts in range(0, len(interp_files)):
                 # geostrophic wind
