@@ -76,7 +76,6 @@ def aerosolProfileMass(interp_files, listspec):
     infile.close()
 
 def aerosolProfileConc(interp_files, nbin, reglim, wrfchem_bin_limits):
-    print('aerosolProfileConc')
 
     infile  = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
     alt     = infile.variables['init_atmosphere_alt'][0]

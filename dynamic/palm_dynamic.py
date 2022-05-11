@@ -368,34 +368,64 @@ for wrf_file in wrf_files_proc:
                 f_out.createDimension('west_east', len(irange))
                 f_out.createDimension('south_north', len(jrange))
 
-                # atmospheric variables
+                # create list of variables
+                # dynamical variables
                 wrfchem_dynamic = ['PH', 'PHB', 'HGT', 'T', 'W', 'TSLB', 'SMOIS', 'MU', 'MUB','P', 'PB', 'PSFC']
-                # if chemical species are included
+                # add chemical species if included
                 if len(wrfchem_spec)>0:
                     wrfchem_variables = wrfchem_dynamic + wrfchem_spec
+                    wrfchem_variables.append('ALT')        # inverse density
                 else:
                     wrfchem_variables = wrfchem_dynamic
+                    wrfchem_variables.append('ALT')        # inverse density
 
-                # if aerosol species are included
+                # add aerosol species if included
                 if aerosol_wrfchem:
                     wrfchem_variables = wrfchem_variables + wrfchem_aerosols
-                    wrfchem_variables.append('ALT')   # inverse density
 
                 for varname in wrfchem_variables:
                     # gaseous aerosols
+
+                    # Avogadro
+                    N_avr = 6.022e23
+                    # inverse density
+                    inv_den = f_wrf.variables['ALT'][:]
+
                     # H2SO4
                     if varname == 'h2so4':
-                        v_wrf = f_wrf.variables['sulf']
-                        v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
-                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                        mol_w = 98.08
+                        v_wrf        = f_wrf.variables['sulf']
+                        v_wrf_val    = f_wrf.variables['sulf'][:]
+                        v_wrf_valout = N_avr * (1/inv_den) * v_wrf_val/mol_w
+                        v_out        = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:]     = regridder.regrid(v_wrf_valout[...,regridder.ys,regridder.xs])
+                    # HNO3
+                    elif varname == 'hno3':
+                        mol_w = 63.01
+                        v_wrf        = f_wrf.variables['hno3']
+                        v_wrf_val    = f_wrf.variables['hno3'][:]
+                        v_wrf_valout = N_avr * (1/inv_den) * v_wrf_val/mol_w
+                        v_out        = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:]     = regridder.regrid(v_wrf_valout[...,regridder.ys,regridder.xs])
+                    # NH3
+                    elif varname == 'nh3':
+                        mol_w = 17.03
+                        v_wrf        = f_wrf.variables['nh3']
+                        v_wrf_val    = f_wrf.variables['nh3'][:]
+                        v_wrf_valout = N_avr * (1/inv_den) * v_wrf_val/mol_w
+                        v_out        = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
+                        v_out[:]     = regridder.regrid(v_wrf_valout[...,regridder.ys,regridder.xs])
                     # NVOCs
                     elif varname == 'ocnv':
-                        nvoc_list =  ['gly', 'n2o5']
+                        nvoc_list = ['gly', 'n2o5']
+                        mol_w     = [58.04, 108.01]
                         vsize = f_wrf.variables[nvoc_list[0]].shape
                         v_wrf = np.zeros(vsize)
+                        cnt =0
                         for nvoc in nvoc_list:
                             nvoc_data = f_wrf.variables[nvoc]
-                            v_wrf = v_wrf + nvoc_data
+                            v_wrf = v_wrf + (N_avr * (1/inv_den) * nvoc_data/mol_w[cnt])
+                            cnt = cnt +1
                         v_out = f_out.createVariable(varname, 'f4', nvoc_data.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
                     # SVOCs    
@@ -403,9 +433,11 @@ for wrf_file in wrf_files_proc:
                         svoc_list = ['hcho', 'ch3oh']
                         vsize = f_wrf.variables[svoc_list[0]].shape
                         v_wrf = np.zeros(vsize)
+                        cnt = 0
                         for svoc in svoc_list:
                             svoc_data = f_wrf.variables[svoc]
-                            v_wrf = v_wrf + svoc_data
+                            v_wrf = v_wrf + (N_avr * (1/inv_den) * nvoc_data/mol_w[cnt])
+                            cnt = cnt + 1
                         v_out = f_out.createVariable(varname, 'f4', svoc_data.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
                     else:

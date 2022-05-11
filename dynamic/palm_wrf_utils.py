@@ -233,8 +233,8 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     except:
         pass
 
-    nc_infile = netCDF4.Dataset(infile, 'r')
-    nc_wrf = netCDF4.Dataset(wrffile, 'r')
+    nc_infile  = netCDF4.Dataset(infile, 'r')
+    nc_wrf     = netCDF4.Dataset(wrffile, 'r')
     nc_outfile = netCDF4.Dataset(outfile, "w", format="NETCDF4")
     nc_outfile.createDimension('Time', None)
     for dimname in ['west_east', 'south_north', 'soil_layers_stag']:
@@ -283,7 +283,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
 
     # Report
     gpdelta = gpf2 - gpf
-    print('GP deltas by level:')
+    #print('GP deltas by level:')
     #for k in range(gpf.shape[0]):
     #    print_dstat(k, gpdelta[k])
 
@@ -373,10 +373,12 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
             chem_data_raw  = np.r_[chem_data_raw[0:1], chem_data_raw]
 
             if (spec == 'PM10' or spec == 'PM2_5_DRY'):
-                chem_data_raw  = nc_infile.variables[spec][0]
                 chem_data  = interpolate_1d(z_levels, height, (chem_data_raw)*1e-9)
+
+            # other chemical species
             else:
                 chem_data  = interpolate_1d(z_levels, height, chem_data_raw)
+
             vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
             vdata[0,:,:,:] = chem_data
         
@@ -414,6 +416,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
         alt_data = interpolate_1d(z_levels, height, alt_data_raw)
         vdata          = nc_outfile.createVariable('init_atmosphere_alt', "f4",("Time", "z", "south_north", "west_east"))
         vdata[0,:,:,:] = alt_data
+
         # by size bin
         for ab in range(1,5):
             # by species & sub-species
@@ -426,6 +429,8 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
             for wspec in spec_wrf:
                 inval_spec     = nc_infile.variables[wspec +'_a0'+ str(ab)][0]
                 inval_spec     = np.r_[inval_spec[0:1], inval_spec]
+                # convert ug/kg to #/m3
+                inval_spec     = (inval_spec/1e-9)/(1/alt_data_raw)
                 inval_specint  = interpolate_1d(z_levels, height, inval_spec)
                 val_specout    = val_specout + inval_specint
             # write to .interp file
