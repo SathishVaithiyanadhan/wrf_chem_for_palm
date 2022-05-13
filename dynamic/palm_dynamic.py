@@ -415,6 +415,7 @@ for wrf_file in wrf_files_proc:
                         v_wrf_valout = N_avr * (1/inv_den) * v_wrf_val/mol_w
                         v_out        = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
                         v_out[:]     = regridder.regrid(v_wrf_valout[...,regridder.ys,regridder.xs])
+                    # smpa, smpbb, biog1_c, biog1_o
                     # NVOCs
                     elif varname == 'ocnv':
                         nvoc_list = ['gly', 'n2o5']
@@ -431,6 +432,7 @@ for wrf_file in wrf_files_proc:
                     # SVOCs    
                     elif varname == 'ocsv':
                         svoc_list = ['hcho', 'ch3oh']
+                        mol_w     = [30.03, 32.04]
                         vsize = f_wrf.variables[svoc_list[0]].shape
                         v_wrf = np.zeros(vsize)
                         cnt = 0
