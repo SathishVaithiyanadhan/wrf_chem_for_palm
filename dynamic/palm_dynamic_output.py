@@ -89,7 +89,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         outfile.createDimension('Dmid', sum(nbin))
 
         # include for gaseous aerosols from chemistry
-        idx_len = len(listspec) + 5
+        idx_len = len(listspec)
         outfile.createDimension('composition_index', idx_len)
         outfile.createDimension('max_string_length', 25)
 
@@ -107,12 +107,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         # 2D vertical profile variables
         _val_composition_name    = outfile.createVariable('composition_name',"S1", ("composition_index", "max_string_length"))
         _val_composition_name.setncattr('long_name', "aerosol composition name")
-        spec_name =  listspec
-        spec_name.append('H2SO4')
-        spec_name.append('HNO3')
-        spec_name.append('NH3')
-        spec_name.append('OCNV')
-        spec_name.append('OCSV')
+        spec_name = listspec
         composition_name         = np.array([spec_name],dtype = 'S25')
         _val_composition_name[:] = netCDF4.stringtochar(composition_name)
 
