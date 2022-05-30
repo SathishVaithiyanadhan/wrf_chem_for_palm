@@ -124,6 +124,7 @@ def aerosolMassWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, listspec,
     for ts in range(0, len(interp_files)):
         infile = netCDF4.Dataset(interp_files[ts], "r", format="NETCDF4")
         val_spec = np.zeros( (_dim1_size, _dim2_size, len(listspec)) )
+        val_sum = 0
 
         for n_spec in range(0, len(listspec)):
             in_spec = listspec[n_spec]
@@ -139,7 +140,9 @@ def aerosolMassWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, listspec,
             elif (side == 'top'):
                 val_spec[:,:,n_spec] = infile.variables['aerosol_mass_'+ in_spec][0, dimensions['zdim']-1, :, :]
 
-        val_sum = np.sum(val_spec,axis = 2)
+            val_sum = val_sum + np.sum(val_spec,axis = 2)
+
+        #val_sum = np.sum(val_spec,axis = 2)
         # write mass frac values
         for n_spec in range(0, len(listspec)):
             val_side[ts, :, :, n_spec] = val_spec[:,:,n_spec]/val_sum
@@ -162,8 +165,8 @@ def aerosolConWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, side, nbin
     for ts in range(0, len(interp_files)):
         infile = netCDF4.Dataset(interp_files[ts], "r", format="NETCDF4")
         outval = np.zeros( (_dim1_size, _dim2_size) )
-        for n_dmid in range(0, bin_dmid.size):
 
+        for n_dmid in range(0, bin_dmid.size):
             for abin in range(0, len(open_bins)):
                 if (side == 'left'):
                     inval = infile.variables['aerosol'+ open_bins[abin]][0, :, :, 0]
@@ -180,6 +183,7 @@ def aerosolConWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, side, nbin
                 outval = outval + inval
 
             aero_conc[ts, :, :, n_dmid] = outval
+
         infile.close()
 
     return aero_conc

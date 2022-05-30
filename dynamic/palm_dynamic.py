@@ -71,17 +71,6 @@ palm_dynamic_config.configure(configname)
 # Import values (including loaded) from config module into globals
 from palm_dynamic_config import *
 
-# Load all aerosol species (add all components)
-#if aerosol_wrfchem:
-#    wrfchem_aerosols = []
-#    for aero in listspec:
-#        _aero = palm_dynamic_aerosol.translate_aerosol_species(aero).split(",")
-#        for _aeros in _aero:
-#            wrfchem_aerosols.append(_aeros+ '_a01')
-#            wrfchem_aerosols.append(_aeros+ '_a02')
-#            wrfchem_aerosols.append(_aeros+ '_a03')
-#            wrfchem_aerosols.append(_aeros+ '_a04')
-
 import palm_wrf_utils
 from palm_dynamic_output import palm_dynamic_output
 
@@ -471,15 +460,11 @@ for wrf_file in wrf_files_proc:
                 open_bin =  sorted(set(open_bin), key=open_bin.index)
 
                 inv_den = f_wrf.variables['ALT'][0]
-
                 naero = 0
                 for aero_bin in open_bin:
                     nbn = f_wrf.variables['num' + aero_bin]
-                    # convert /kg to #/m3
+                    # convert  aerosol num (/kg) to number con (#/m3)
                     nbn_val = nbn*(1/inv_den)
-                    # factor for bin-size
-                    #val = nbn_val*(sum(overlap_ratio[:,naero]))
-                    
                     naero = naero+1
 
                     # interpolate and create variable
