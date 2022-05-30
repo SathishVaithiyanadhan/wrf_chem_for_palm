@@ -24,61 +24,68 @@ def translate_aerosol_species(name):
     else:
         return None
 
-def aerosolProfileMass(interp_files, listspec):
+def upwind_location(zlev, u, v):
+    u_wnd = u[0,zlev,:,:]
+    v_wnd = v[0,zlev,:,:]
 
+    wnd_dir = np.mod(180 + np.rad2deg(np.arctan2(u_wnd, v_wnd)),360)
+    wnd_avg = np.mean(wnd_dir)
+
+    if  0 < wnd_avg <= 45:
+        prf_x = round(wnd_dir.shape[0]/2)
+        prf_y = 0
+    elif 315 < wnd_avg <=0:
+        prf_x = round(wnd_dir.shape[0]/2)
+        prf_y = 0
+    elif 45 < wnd_avg <= 135:
+        prf_x = round(wnd_dir.shape[0]/2)
+        prf_y = round(wnd_dir.shape[1]/2)
+    elif 135 < wnd_avg <= 225:
+        prf_x = round(wnd_dir.shape[0]/2)
+        prf_y = wnd_dir.shape[1]
+    else:
+        prf_x = round(wnd_dir.shape[0]/2)
+        prf_y = round(wnd_dir.shape[1]/2)
+
+    return prf_x, prf_y
+
+
+def aerosolProfileMass(interp_files, listspec):
+    # open first interpolated file
     infile  = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
-    alt     = infile.variables['init_atmosphere_alt'][0]
     u       = infile.variables['init_atmosphere_u']
     v       = infile.variables['init_atmosphere_v']
     z_level = infile.variables['z']
 
-    # upwind location & mass frac
-    aero_massfrac_a = np.zeros((z_level.size, len(listspec)))
-
+    # find upwind location and mass frac for each level and aerosol
+    tot_mass = np.zeros((z_level.size))
+    spec_mass = np.zeros((z_level.size, len(listspec)))
     for zlev in range(0, z_level.size):
-        u_wnd = u[0,zlev,:,:]
-        v_wnd = v[0,zlev,:,:]
-        wnd_dir = np.mod(180 + np.rad2deg(np.arctan2(u_wnd, v_wnd)),360)
-        wnd_avg = np.mean(wnd_dir)
-        if  0 < wnd_avg <= 45:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = 0
-        elif 315 < wnd_avg <=0:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = 0
-        elif 45 < wnd_avg <= 135:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = round(wnd_dir.shape[1]/2)
-        elif 135 < wnd_avg <= 225:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = wnd_dir.shape[1]
-        else:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = round(wnd_dir.shape[1]/2)
-        # mass at each z-level (z, composition_index)
-        aero_mass = np.zeros((len(listspec)))
+        l_x, l_y = upwind_location(zlev, u, v)
 
-        for naero in range(0, len(listspec)):
-            in_spec = listspec[naero]
-            if (in_spec == 'H2SO4' or in_spec=='HNO3' or in_spec== 'NH3' or in_spec== 'OCNV' or in_spec== 'OCSV'):
-                spec_mass = infile.variables['init_atmosphere_'+ in_spec.lower()][0]
-            else:
-                spec_mass = infile.variables['init_atmosphere_'+ in_spec][0]
-            aero_mass[naero] = spec_mass[zlev, prf_y, prf_x]
-        total_mass = np.sum(aero_mass)
+        # sum and individual value
+        _mass = 0
+        cnt = 0
+        for aspec in listspec:
+            val = infile.variables['aerosol_mass_' + aspec][0, zlev, l_y, l_x]
+            spec_mass[zlev, cnt] = val
+            _mass = _mass + val
+            cnt = cnt +1
+        tot_mass[zlev] = _mass
 
-        # mass fraction values
-        for naero in range(0, len(listspec)):
-            aero_massfrac_a[zlev, naero] = aero_mass[naero]/total_mass
-
-    return aero_massfrac_a
+    # fraction by level
+    aero_massfrac_a = np.zeros((z_level.size, len(listspec)))
+    for zlev in range(0, z_level.size):
+        for asol in range(0, len(listspec)):
+            aero_massfrac_a[zlev, asol] = spec_mass[zlev, asol] / tot_mass[zlev]
 
     infile.close()
 
-def aerosolProfileConc(interp_files, nbin, reglim, wrfchem_bin_limits):
+    return aero_massfrac_a
 
+def aerosolProfileConc(interp_files, nbin, reglim, wrfchem_bin_limits):
+    # open first interpolated file
     infile  = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
-    alt     = infile.variables['init_atmosphere_alt'][0]
     u       = infile.variables['init_atmosphere_u']
     v       = infile.variables['init_atmosphere_v']
     z_level = infile.variables['z']
@@ -90,43 +97,22 @@ def aerosolProfileConc(interp_files, nbin, reglim, wrfchem_bin_limits):
     open_bins = sorted(set(open_bins), key=open_bins.index)
 
     aero_con = np.zeros((z_level.size, bin_dmid.size))
-
     for zlev in range(0, z_level.size):
-        u_wnd = u[0,zlev,:,:]
-        v_wnd = v[0,zlev,:,:]
-        wnd_dir = np.mod(180 + np.rad2deg(np.arctan2(u_wnd, v_wnd)),360)
-        wnd_avg = np.mean(wnd_dir)
-        if  0 < wnd_avg <= 45:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = 0
-        elif 315 < wnd_avg <=0:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = 0
-        elif 45 < wnd_avg <= 135:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = round(wnd_dir.shape[1]/2)
-        elif 135 < wnd_avg <= 225:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = wnd_dir.shape[1]
-        else:
-            prf_x = round(wnd_dir.shape[0]/2)
-            prf_y = round(wnd_dir.shape[1]/2)
+        l_x, l_y = upwind_location(zlev, u, v)
 
-        # aerosol concen#
-        # ug/kg-dryair to aerosol# concen.(# m-3):inverse density (m3 kg-1)
-        # convert units, weight Dmid by size-bin use overlap ratio
         for n_dmid in range(0, bin_dmid.size):
             outval = 0.0
             for abin in range(0, len(open_bins)):
-                inval = infile.variables['init_aerosol'+ open_bins[abin]][0]
-                _val = inval[zlev, prf_y, prf_x] * alt[zlev, prf_y, prf_x]
+                inval = infile.variables['aerosol'+ open_bins[abin]][0]
+                _val = inval[zlev, l_y, l_x]
                 _val1 = _val * overlap_ratio[n_dmid, abin]
                 outval = outval + _val1
             aero_con[zlev, n_dmid] = outval
 
-    return aero_con
-
     infile.close()
+
+    return aero_con 
+
 
 def aerosolMassWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, listspec, side):
     _dim1_size = dimensions[_dim1+'dim']
@@ -141,24 +127,23 @@ def aerosolMassWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, listspec,
 
         for n_spec in range(0, len(listspec)):
             in_spec = listspec[n_spec]
-            if (in_spec == 'H2SO4' or in_spec=='HNO3' or in_spec== 'NH3' or in_spec== 'OCNV' or in_spec== 'OCSV'):
-                in_spec = in_spec.lower()
 
             if (side == 'left'):
-                val_spec[:,:,n_spec] = infile.variables['init_atmosphere_'+ in_spec][0, :, :, 0]
+                val_spec[:,:,n_spec] = infile.variables['aerosol_mass_'+ in_spec][0, :, :, 0]
             elif (side == 'right'):
-                val_spec[:,:,n_spec] = infile.variables['init_atmosphere_'+ in_spec][0, :, :, dimensions['xdim'] - 1]
+                val_spec[:,:,n_spec] = infile.variables['aerosol_mass_'+ in_spec][0, :, :, dimensions['xdim'] - 1]
             elif (side =='south'):
-                val_spec[:,:,n_spec] = infile.variables['init_atmosphere_'+ in_spec][0, :, 0, :]
+                val_spec[:,:,n_spec] = infile.variables['aerosol_mass_'+ in_spec][0, :, 0, :]
             elif (side == 'north'):
-                val_spec[:,:,n_spec] = infile.variables['init_atmosphere_'+ in_spec][0, :, dimensions['ydim'] - 1, :]
+                val_spec[:,:,n_spec] = infile.variables['aerosol_mass_'+ in_spec][0, :, dimensions['ydim'] - 1, :]
             elif (side == 'top'):
-                val_spec[:,:,n_spec] = infile.variables['init_atmosphere_'+ in_spec][0, dimensions['zdim']-1, :, :]
-        val_sum = np.sum(val_spec,axis = 2)
+                val_spec[:,:,n_spec] = infile.variables['aerosol_mass_'+ in_spec][0, dimensions['zdim']-1, :, :]
 
+        val_sum = np.sum(val_spec,axis = 2)
         # write mass frac values
         for n_spec in range(0, len(listspec)):
             val_side[ts, :, :, n_spec] = val_spec[:,:,n_spec]/val_sum
+
         infile.close()
 
     return val_side
@@ -181,22 +166,16 @@ def aerosolConWrfchemBoundary(dimensions, _dim1, _dim2, interp_files, side, nbin
 
             for abin in range(0, len(open_bins)):
                 if (side == 'left'):
-                    alt   = infile.variables['init_atmosphere_alt'][0, :, :, 0]
-                    inval = infile.variables['init_aerosol'+ open_bins[abin]][0, :, :, 0]
+                    inval = infile.variables['aerosol'+ open_bins[abin]][0, :, :, 0]
                 elif (side == 'right'):
-                    alt   = infile.variables['init_atmosphere_alt'][0, :, :, dimensions['xdim'] - 1]
-                    inval = infile.variables['init_aerosol'+ open_bins[abin]][0, :, :, dimensions['xdim'] - 1]
+                    inval = infile.variables['aerosol'+ open_bins[abin]][0, :, :, dimensions['xdim'] - 1]
                 elif (side =='south'):
-                    alt   = infile.variables['init_atmosphere_alt'][0, :, 0, :]
-                    inval = infile.variables['init_aerosol'+ open_bins[abin]][0, :, 0, :]
+                    inval = infile.variables['aerosol'+ open_bins[abin]][0, :, 0, :]
                 elif (side == 'north'):
-                    alt   = infile.variables['init_atmosphere_alt'][0, :, dimensions['ydim'] - 1, :]
-                    inval = infile.variables['init_aerosol'+ open_bins[abin]][0, :, dimensions['ydim'] - 1, :]
+                    inval = infile.variables['aerosol'+ open_bins[abin]][0, :, dimensions['ydim'] - 1, :]
                 elif (side == 'top'):
-                    alt   = infile.variables['init_atmosphere_alt'][0, dimensions['zdim']-1, :, :]
-                    inval = infile.variables['init_aerosol'+ open_bins[abin]][0, dimensions['zdim']-1, :, :]
+                    inval = infile.variables['aerosol'+ open_bins[abin]][0, dimensions['zdim']-1, :, :]
                 # convert and factor for size-bin
-                inval = inval * alt
                 inval = inval * overlap_ratio[n_dmid, abin]
                 outval = outval + inval
 

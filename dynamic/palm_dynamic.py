@@ -70,16 +70,17 @@ if configname == '':
 palm_dynamic_config.configure(configname)
 # Import values (including loaded) from config module into globals
 from palm_dynamic_config import *
-# Load all aerosol chemical species
-if aerosol_wrfchem:
-    wrfchem_aerosols = []
-    for aero in listspec:
-        _aero = palm_dynamic_aerosol.translate_aerosol_species(aero).split(",")
-        for _aeros in _aero:
-            wrfchem_aerosols.append(_aeros+ '_a01')
-            wrfchem_aerosols.append(_aeros+ '_a02')
-            wrfchem_aerosols.append(_aeros+ '_a03')
-            wrfchem_aerosols.append(_aeros+ '_a04')
+
+# Load all aerosol species (add all components)
+#if aerosol_wrfchem:
+#    wrfchem_aerosols = []
+#    for aero in listspec:
+#        _aero = palm_dynamic_aerosol.translate_aerosol_species(aero).split(",")
+#        for _aeros in _aero:
+#            wrfchem_aerosols.append(_aeros+ '_a01')
+#            wrfchem_aerosols.append(_aeros+ '_a02')
+#            wrfchem_aerosols.append(_aeros+ '_a03')
+#            wrfchem_aerosols.append(_aeros+ '_a04')
 
 import palm_wrf_utils
 from palm_dynamic_output import palm_dynamic_output
@@ -374,23 +375,16 @@ for wrf_file in wrf_files_proc:
                 # add chemical species if included
                 if len(wrfchem_spec)>0:
                     wrfchem_variables = wrfchem_dynamic + wrfchem_spec
-                    wrfchem_variables.append('ALT')        # inverse density
-                else:
-                    wrfchem_variables = wrfchem_dynamic
-                    wrfchem_variables.append('ALT')        # inverse density
+                    #wrfchem_variables.append('ALT')        # inverse density
 
                 # add aerosol species if included
-                if aerosol_wrfchem:
-                    wrfchem_variables = wrfchem_variables + wrfchem_aerosols
+                #if aerosol_wrfchem:
+                #    wrfchem_variables = wrfchem_variables + wrfchem_aerosols
+                N_avr = 6.022e23 # Avargardo constant
+                inv_den = f_wrf.variables['ALT'][0] # inverse density
 
                 for varname in wrfchem_variables:
                     # gaseous aerosols
-
-                    # Avogadro
-                    N_avr = 6.022e23
-                    # inverse density
-                    inv_den = f_wrf.variables['ALT'][:]
-
                     # H2SO4
                     if varname == 'h2so4':
                         mol_w = 98.08
@@ -447,6 +441,51 @@ for wrf_file in wrf_files_proc:
                         v_wrf = f_wrf.variables[varname]
                         v_out = f_out.createVariable(varname, 'f4', v_wrf.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+
+                ### Aerosols ###
+
+                ## mass fraction
+                vt               = f_wrf.variables['so4_a01']
+                vt_dim           = f_wrf.variables['so4_a01'].shape
+                aerosol_bin      = ['_a01', '_a02', '_a03', '_a04']
+                for aeros in listspec:
+                    aero_wrfchem = palm_dynamic_aerosol.translate_aerosol_species(aeros).split(",")
+                    
+                    # open each sub-species
+                    raw_sum = np.zeros(vt_dim)
+                    for _aeros in aero_wrfchem:
+                        # open each size bin
+                        for a_bin in aerosol_bin:
+                            raw_val = f_wrf.variables[ _aeros + a_bin]
+                            raw_sum = raw_sum + raw_val
+
+                    # mass for each aerosol in listspec
+                    v_out = f_out.createVariable('aerosol_mass_' + aeros, 'f4', vt.dimensions)
+                    v_out[:] = regridder.regrid(raw_sum[...,regridder.ys,regridder.xs])
+
+                ## concentration number by size bin - overlap ratio the wrfchem and palm aerosol bins
+                # define palm bin limits
+                bin_dmid, bin_lims = palm_dynamic_aerosol.define_bins(nbin, reglim)
+                # define overlap of palm and wrfchem bins
+                open_bin, overlap_ratio = palm_dynamic_aerosol.aerosol_binoverlap(reglim, wrfchem_bin_limits)
+                open_bin =  sorted(set(open_bin), key=open_bin.index)
+
+                inv_den = f_wrf.variables['ALT'][0]
+
+                naero = 0
+                for aero_bin in open_bin:
+                    nbn = f_wrf.variables['num' + aero_bin]
+                    # convert /kg to #/m3
+                    nbn_val = nbn*(1/inv_den)
+                    # factor for bin-size
+                    #val = nbn_val*(sum(overlap_ratio[:,naero]))
+                    
+                    naero = naero+1
+
+                    # interpolate and create variable
+                    v_out = f_out.createVariable('aerosol'+ aero_bin, 'f4', nbn.dimensions)
+                    v_out[:] = regridder.regrid(nbn_val[...,regridder.ys,regridder.xs])
+
 
                 # U and V have special treatment (unstaggering)
                 v_out = f_out.createVariable('U', 'f4', ('Time', 'bottom_top', 'south_north', 'west_east'))
