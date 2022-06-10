@@ -71,13 +71,12 @@ vinterp_terrain_smoothing
 interp_dir_name     file path to interpolated files
 
 wrfchem_spec        wrf-chem chemical species to be included in dynamic driver, list
-                    of species: no, no2, no3, pm10, PM2_5_DRY, o3, co, hno3, ho, h2o2, nh3
-                    ("no")
+                    of gaseous species: no, no2, no3, pm10, PM2_5_DRY, o3, co, hno3, ho, h2o2, nh3
 
 aerosol_wrfchem     True means aerosols are included, (False)
 wrfchem_bin_limits  wrf-chem aerosol siz bins ([3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5])
 listspec            PALM aerosol species, only aerosols, 
-                    options listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO'] ("SO4")
+                    options listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']
 nbin                SALSA parameter, # size bins in subrange ([1,7])
 reglim              SALSA parameter, subrange limits ([3.9e-8, 5.0e-8, 2.5e-6])
 nf2a                SALSA parameter, insoluble fraction, currently only soluble supported
@@ -106,12 +105,6 @@ origin_z            origin of the domain in the vertical direction
 -Interpolated files are saved to a different directory than the wrf-chem data files
 -A variety of chemical species can be inlcuded.
 -Aerosols can be included and are weighted based on specified aerosol size bins
-
-# Latest update (March/April 2022)
--Any chemical specie from wrf-chem can be selected in the configuration file and will be 
-	included in the dynamic driver.
--Extensive changes were made to palm_dynamic_output and palm_dynamic_config to accomdate
-	the changes above.
--Resolved issue: missing horizontal interpolation of chemical species has been resolved.
--Default setting revised.
--Base state temperature corrected to 290.
+-Base state temperature corrected to 290. for WRFChem
+-Changes to palm_dynamic_output were made to include the various aerosol and chemical
+	species
