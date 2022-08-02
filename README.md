@@ -1,8 +1,7 @@
 Scripts for processing of WRF-CHEM files to PALM dynamic driver.
 Version: v.1.0
 
-The scripts are based on the wrf-CAMx interface:
-https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface
+The scripts are based on the (wrf-CAMx interface)[https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface]
 
 Usage: palm_dynamic -c <config_name> [-w]
 The optional parameter -w allows to skip horizontal and vertical
@@ -32,35 +31,31 @@ The scripts support both variants of WRF-CHEM vertical levels - the sigma levels
 However, it is necessary to correctly configure this option via the setting
 "wrf_hybrid_levs = True/False".
 
-CONFIGURATION
+# CONFIGURATION
 Description of the particular configuration options are (defaults are in parenthesis):
-# 1. Domain and case related config
-domain              name of the simulation case ("")
-resolution          name of the particular domain resolution scenario ("")
-scenario            name of the individual scenario in the case ("")
-nested_domain       False indicates parent and True nested domain. (False)
+## 1. Domain and case related configurations
+    - domain              name of the simulation case ("")
+    - resolution          name of the particular domain resolution scenario ("")
+    - scenario            name of the individual scenario in the case ("")
+    - nested_domain       False indicates parent and True nested domain. (False)
 
-dynamic_driver_file file name of output dynamic driver ("").
-grid_from_static    True - the grid parameters are imported from the static
-                    driver, False - they are prescribed in the config (True)
-static_driver_file  file name of the static driver in case of grid_from_static ("").
-proj_palm           reference coordinate system of PALM simulation ("EPSG:32633")
-proj_wgs84          reference coordinate system of lon-lat projection ("EPSG:4326")
+    - dynamic_driver_file file name of output dynamic driver ("").
+    - grid_from_static    True - the grid parameters are imported from the static driver, False - they are prescribed in the config (True)
+    - static_driver_file  file name of the static driver in case of grid_from_static ("").
+    - proj_palm           reference coordinate system of PALM simulation ("EPSG:32633")
+    - proj_wgs84          reference coordinate system of lon-lat projection ("EPSG:4326")
+    
+    - dz                  height of the PALM vertical grid layer (0.0). The default value dz = 0.0 means dz is assigned from dx.
+    - nz                  number of vertical layers of PALM domain (200)
+    - dz_stretch_level    height in meters from which stretching of vertical levels starts in PALM (5000.0)
+    - dz_stretch_factor   coefficient of the stretching of the vertical layers in PALM (1.0)
+    - dz_max              max height of the stretched vertical layers (100.0)
+    
+    - origin_time         origin time of the PALM simulation in the format YYYY-MM-DD hh:mm:ss (""). The default value "" means that the value is read from the global attribute of the static driver.
+    - simulation_hours    extent of the simulation in hours
 
-dz                  height of the PALM vertical grid layer (0.0). The default
-                    value dz = 0.0 means dz is assigned from dx.
-nz                  number of vertical layers of PALM domain (200)
-dz_stretch_level    height in meters from which stretching of vertical levels
-                    starts in PALM (5000.0)
-dz_stretch_factor   coefficient of the stretching of the vertical layers in PALM (1.0)
-dz_max              max height of the stretched vertical layers (100.0)
+## 2. WRF-CHEM related configurations
 
-origin_time         origin time of the PALM simulation in the format
-                    YYYY-MM-DD hh:mm:ss (""). The default value "" means that
-                    the value is read from the global attribute of the static driver.
-simulation_hours    extent of the simulation in hours
-
-# 2. WRF-CHEM related configurations
 wrf_dir_name        file path of the wrf-chem input files ("").
 wrf_file_mask       file mask of the wrf-chem input files  ("wrfout_*.e000")
 wrf_hybrid_levs     True means hybrid levels in WRF files, False means sigma levels (True).
@@ -90,21 +85,19 @@ wrf_rad_file_mask   file mask of the wrf radiation input files ("auxhist6_*").
 radiation_smoothing_distance
                     smoothing distance for radiation values in m (10000.0).
 
-# 3. Horizontal parameters of the PALM domain which have to be set in case
-#    of grid_from_static = False
+## 3. Horizontal parameters of the PALM domain which have to be set in case of grid_from_static = False
+
 nx, ny              number of horizontal grids of the domain in x and y directions
 dx, dy              grid cell size of the domain in x and y directions
 origin_x, origin_y  origin x and y of the domain
 origin_z            origin of the domain in the vertical direction
 
 
-#  Major Changes from wrf + CAMx scripts made to wrf_chem_for_palm
--Proj future warning resolved
--Chemical species are read from wrf-chem files and interpolated at the same time as the
-	dynamic variables
--Interpolated files are saved to a different directory than the wrf-chem data files
--A variety of chemical species can be inlcuded.
--Aerosols can be included and are weighted based on specified aerosol size bins
--Base state temperature corrected to 290. for WRFChem
--Changes to palm_dynamic_output were made to include the various aerosol and chemical
-	species
+###  Major Changes from wrf + CAMx scripts made to wrf_chem_for_palm
+- Proj future warning resolved
+- Chemical species are read from wrf-chem files and interpolated at the same time as the dynamic variables
+- Interpolated files are saved to a different directory than the wrf-chem data files
+- A variety of chemical species can be inlcuded.
+- Aerosols can be included and are weighted based on specified aerosol size bins
+- Base state temperature corrected to 290. for WRFChem
+- Changes to palm_dynamic_output were made to include the various aerosol and chemical species
