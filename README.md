@@ -1,12 +1,12 @@
 **Scripts for processing of WRF-CHEM files to PALM dynamic driver.**
+
 Version: v.1.0
 
 The scripts are based on the [wrf-CAMx interface](https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface)
 
-Usage: palm_dynamic -c <config_name> [-w]
-The optional parameter -w allows to skip horizontal and vertical
-interpolation in case it is already done.
-Example: python3 palm_dynamic.py -c augsburg_validation_summer_10
+Usage: `palm_dynamic -c <config_name> [-w]`
+The optional parameter -w allows to skip horizontal and vertical interpolation in case it is already done.
+Example: `python3 palm_dynamic.py -c augsburg_validation_summer_10`
 
 The script requires name of the case configuration on the command line.
 The corresponding configuration files are placed in subdirectory
