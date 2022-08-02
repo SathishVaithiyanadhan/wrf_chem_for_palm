@@ -32,7 +32,7 @@ Description of the particular configuration options are (defaults are in parenth
 
 ## Domain and case related configurations
 * `domain`
-    Name of the simulation case ("").
+    - Name of the simulation case ("").
 * `resolution`        Name of the particular domain resolution scenario ("").
 * `scenario`          Name of the individual scenario in the case ("").
 * `nested_domain`     False indicates parent and True nested domain. (False).
