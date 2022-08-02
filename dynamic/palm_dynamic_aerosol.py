@@ -31,21 +31,18 @@ def upwind_location(zlev, u, v):
     wnd_dir = np.mod(180 + np.rad2deg(np.arctan2(u_wnd, v_wnd)),360)
     wnd_avg = np.mean(wnd_dir)
 
-    if  0 < wnd_avg <= 45:
-        prf_x = round(wnd_dir.shape[0]/2)
+    if  0 < wnd_avg <= 45 or 315 < wnd_avg <=0:
         prf_y = 0
-    elif 315 < wnd_avg <=0:
-        prf_x = round(wnd_dir.shape[0]/2)
-        prf_y = 0
+        prf_x = round(wnd_dir.shape[1]/2)
     elif 45 < wnd_avg <= 135:
-        prf_x = round(wnd_dir.shape[0]/2)
-        prf_y = round(wnd_dir.shape[1]/2)
+        prf_y = round(wnd_dir.shape[0]/2)
+        prf_x = round(wnd_dir.shape[1])
     elif 135 < wnd_avg <= 225:
-        prf_x = round(wnd_dir.shape[0]/2)
-        prf_y = wnd_dir.shape[1]
+        prf_y = wnd_dir.shape[0]
+        prf_x = round(wnd_dir.shape[1]/2)
     else:
-        prf_x = round(wnd_dir.shape[0]/2)
-        prf_y = round(wnd_dir.shape[1]/2)
+        prf_y = round(wnd_dir.shape[0]/2)
+        prf_x = 0
 
     return prf_x, prf_y
 

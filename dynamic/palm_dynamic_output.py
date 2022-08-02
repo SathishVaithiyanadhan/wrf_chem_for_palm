@@ -84,7 +84,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     #---------------------------------------------------------------------------
     # include aerosols, add dimensions and variables
     if aerosol_wrfchem:
-        print('Adding aerosol variables')
+        print('\tCreating aerosol variables in dynamic driver')
         # create dimensions
         outfile.createDimension('Dmid', sum(nbin))
 
@@ -169,7 +169,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     #---------------------------------------------------------------------------
     # create dynamical & chemical variables in output
     def add_interpDim(dynam_chem_variables):
-        print('Adding dynamical variables')
+        print('\tCreating dynamical variables in dynamic driver')
         # surface pressure
         _val_surface_forcing_surface_pressure = outfile.createVariable('surface_forcing_surface_pressure', "f4",("time"))
         # geostrophic wind
@@ -270,7 +270,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     
     # read interpolated files and write values for dynamical & chemical variables
     def add_interpValues(dynam_chem_variables):
-        print('Adding initializing variables to Dynamic Driver')
+        print('\tCreating initialisation variablesin dynamic driver')
         infile = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
         outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
         # initialization variables
@@ -301,11 +301,11 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
 
         # time dependent variables - dynamical & chemical variables
         if not nested_domain:
-            print('\nAdding time dependent variables to Dynamic Driver')
+            print('\tCreating time dependent variables in dynamic driver')
             outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
             for ts in range(0, len(interp_files)):
                 # geostrophic wind
-                print('Open wrf file: '+wrf_files[ts])
+                #print('Open wrf file: '+wrf_files[ts])
                 nc_wrf = netCDF4.Dataset(wrf_files[ts], 'r')
                 ug, vg = palm_wrf_gw(nc_wrf, lon_center, lat_center, z_levels)
                 _val_ls_forcing_ug = outfile.variables['ls_forcing_ug']
@@ -314,7 +314,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                 _val_ls_forcing_vg = vg
                 nc_wrf.close()
 
-                print("Processing interpolated file: ",interp_files[ts])
+                print("\tProcessing interpolated file: ",interp_files[ts])
                 infile = netCDF4.Dataset(interp_files[ts], "r", format="NETCDF4")
                 # surface pressure
                 surface_forcing_surface_pressure = infile.variables['surface_forcing_surface_pressure']
@@ -358,7 +358,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                         - (vynorth * areas_yb).sum()
                         - (wztop * areas_zb).sum())
                 mass_corr_v = mass_disbalance / area_boundaries
-                print('Mass disbalance: {0:8g} m3/s (avg = {1:8g} m/s)'.format(mass_disbalance, mass_corr_v))
+                #print('Mass disbalance: {0:8g} m3/s (avg = {1:8g} m/s)'.format(mass_disbalance, mass_corr_v))
                 uxleft  -= mass_corr_v
                 uxright += mass_corr_v
                 vysouth -= mass_corr_v
