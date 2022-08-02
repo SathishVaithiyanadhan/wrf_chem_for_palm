@@ -62,7 +62,7 @@ Description of the particular configuration options are (defaults are in parenth
 
     - aerosol_wrfchem     True means aerosols are included, (False)
     - wrfchem_bin_limits  Wrf-chem aerosol siz bins `[3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5]`
-    - listspec            PALM aerosol species, only aerosols, options __listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']__
+    - listspec            PALM aerosol species, only aerosols, options listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']
     - nbin                SALSA parameter, # size bins in subrange `[1,7]`
     - reglim              SALSA parameter, subrange limits `[3.9e-8, 5.0e-8, 2.5e-6]`
     - nf2a                SALSA parameter, insoluble fraction, currently only soluble supported in PALM (1.0)
@@ -72,10 +72,10 @@ Description of the particular configuration options are (defaults are in parenth
     - radiation_smoothing_distance smoothing distance for radiation values in m (10000.0).
 
 ## Horizontal parameters of the PALM domain which have to be set in case of grid_from_static = False
-    - nx, ny              number of horizontal grids of the domain in x and y directions
-    - dx, dy              grid cell size of the domain in x and y directions
-    - origin_x, origin_y  origin x and y of the domain
-    - origin_z            origin of the domain in the vertical direction
+`nx, ny`              Number of horizontal grids of the domain in x and y directions
+`dx, dy`              Grid cell size of the domain in x and y directions
+`origin_x, origin_y`  Origin x and y of the domain
+`origin_z`            Origin of the domain in the vertical direction
 
 ###  Major Changes from wrf + CAMx scripts made to wrf_chem_for_palm
 - Proj future warning resolved
