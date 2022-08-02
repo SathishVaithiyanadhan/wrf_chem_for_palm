@@ -172,7 +172,6 @@ if grid_from_static:
     # close static driver nc file
     ncs.close()
 else:
-    #TODO check all necessary parameters are set and are correct
     # initialize necessary arrays
     try:
         terrain = np.zeros(shape=(ny, nx), dtype=float)
@@ -254,15 +253,14 @@ if nested_domain:
     end_time = start_time
 
 # get wrf times and sort wrf files by time
-print('\nAnalyse WRF files dates:')
+#print('\nAnalyse WRF files dates:')
 file_times = []
 for wrf_file in wrf_file_list:
-    #print('\nWRF file',wrf_file)
     nc_wrf = netCDF4.Dataset(wrf_file, "r", format="NETCDF4")
     ta = nc_wrf.variables['Times'][:]
     t = ta.tobytes().decode("utf-8")
     td = datetime.strptime(t, '%Y-%m-%d_%H:%M:%S')
-    print(os.path.basename(wrf_file), ': ', td)
+    #print(os.path.basename(wrf_file), ': ', td)
     file_times.append((td,wrf_file))
     nc_wrf.close()
 
@@ -273,7 +271,7 @@ for tf in file_times:
     if end_time is None or tf[0] <= end_time:
         times.append(tf[0])
         wrf_files.append(tf[1])
-#print('\n'.join('{}'.format(t) for t in times))
+
 print('PALM output times:', ', '.join('{}'.format(t) for t in times))
 
 if not times.__contains__(start_time):
@@ -364,11 +362,8 @@ for wrf_file in wrf_files_proc:
                 # add chemical species if included
                 if len(wrfchem_spec)>0:
                     wrfchem_variables = wrfchem_dynamic + wrfchem_spec
-                    #wrfchem_variables.append('ALT')        # inverse density
 
                 # add aerosol species if included
-                #if aerosol_wrfchem:
-                #    wrfchem_variables = wrfchem_variables + wrfchem_aerosols
                 N_avr = 6.022e23 # Avargardo constant
                 inv_den = f_wrf.variables['ALT'][0] # inverse density
 
@@ -470,7 +465,6 @@ for wrf_file in wrf_files_proc:
                     # interpolate and create variable
                     v_out = f_out.createVariable('aerosol'+ aero_bin, 'f4', nbn.dimensions)
                     v_out[:] = regridder.regrid(nbn_val[...,regridder.ys,regridder.xs])
-
 
                 # U and V have special treatment (unstaggering)
                 v_out = f_out.createVariable('U', 'f4', ('Time', 'bottom_top', 'south_north', 'west_east'))
@@ -597,4 +591,4 @@ palm_dynamic_output(wrf_files_proc, interp_files, dynamic_driver_file, times_sec
                     z_levels, z_levels_stag, ztop, z_soil_levels, dx, dy, cent_lon, cent_lat,
                     rad_times_proc, rad_values_proc, soil_moisture_adjust, nested_domain)
 
-print('Creation of dynamic driver finished.')
+print('\nCreation of dynamic driver finished.')
