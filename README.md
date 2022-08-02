@@ -31,38 +31,38 @@ The scripts support both variants of WRF-CHEM vertical levels - the sigma levels
 Description of the particular configuration options are (defaults are in parenthesis):
 
 ## Domain and case related configurations
-- domain              Name of the simulation case ("")
-- resolution          Name of the particular domain resolution scenario ("")
-- scenario            Mame of the individual scenario in the case ("")
-- nested_domain       False indicates parent and True nested domain. (False)
+    - domain              Name of the simulation case ("").
+    - resolution          Name of the particular domain resolution scenario ("").
+    - scenario            Name of the individual scenario in the case ("").
+    - nested_domain       False indicates parent and True nested domain. (False).
 
-- dynamic_driver_file File name of output dynamic driver ("").
-- grid_from_static    True - the grid parameters are imported from the static driver, False - they are prescribed in the config (True)
-- static_driver_file  File name of the static driver in case of grid_from_static ("").
-- proj_palm           Reference coordinate system of PALM simulation ("EPSG:32633")
-- proj_wgs84          Reference coordinate system of lon-lat projection ("EPSG:4326")
+    - dynamic_driver_file File name of output dynamic driver ("").
+    - grid_from_static    True - import from static driver, False - given in config (True).
+    - static_driver_file  File name of the static driver in case of grid_from_static ("").
+    - proj_palm           Reference coordinate system of PALM simulation ("EPSG:32633").
+    - proj_wgs84          Reference coordinate system of lon-lat projection ("EPSG:4326").
     
-- dz                  Height of the PALM vertical grid layer (0.0). The default value dz = 0.0 means dz is assigned from dx.
-- nz                  Number of vertical layers of PALM domain (200)
-- dz_stretch_level    Height in meters from which stretching of vertical levels starts in PALM (5000.0)
-- dz_stretch_factor   Coefficient of the stretching of the vertical layers in PALM (1.0)
-- dz_max              Max height of the stretched vertical layers (100.0)
+    - dz                  Height of the PALM vertical grid layer (0.0). The default value dz = 0.0 means dz is assigned from dx.
+    - nz                  Number of vertical layers of PALM domain (200).
+    - dz_stretch_level    Height in meters from which stretching of vertical levels starts in PALM (5000.0).
+    - dz_stretch_factor   Coefficient of the stretching of the vertical layers in PALM (1.0).
+    - dz_max              Max height of the stretched vertical layers (100.0).
     
-- origin_time         Origin time of the PALM simulation in the format YYYY-MM-DD hh:mm:ss (""). Default reads from static driver.
-- simulation_hours    Extent of the simulation in hours
+    - origin_time         Origin time of the PALM simulation in the format YYYY-MM-DD hh:mm:ss (""). Default reads from static driver.
+    - simulation_hours    Extent of the simulation in hours.
 
 ## WRF-CHEM related configurations
-    - wrf_dir_name        file path of the wrf-chem input files (""). 
-    - wrf_file_mask       file mask of the wrf-chem input files  ("wrfout_*.e000")
+    - wrf_dir_name        File path of the wrf-chem input files (""). 
+    - wrf_file_mask       File mask of the wrf-chem input files  ("wrfout_*.e000")
     - wrf_hybrid_levs     True means hybrid levels in WRF files, False means sigma levels (True).
     - vinterp_terrain_smoothing
         - the standard deviation for Gaussian kernel of smoothing method of the PALM terrain for WRF vertical interpolation to avoid sharp horizontal gradients. Value None disables the smoothing. (None)
-    - interp_dir_name     file path to interpolated files
-    - wrfchem_spec        wrf-chem chemical species to be included in dynamic driver, list of gaseous species: no, no2, no3, pm10, PM2_5_DRY, o3, co, hno3, ho, h2o2, nh3
+    - interp_dir_name     File path to interpolated files
+    - wrfchem_spec        Wrf-chem chemical species to be included in dynamic driver, `list of gaseous species: no, no2, no3, pm10, PM2_5_DRY, o3, co, hno3, ho, h2o2, nh3`
 
     - aerosol_wrfchem     True means aerosols are included, (False)
-    - wrfchem_bin_limits  wrf-chem aerosol siz bins `[3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5]`
-    - listspec            PALM aerosol species, only aerosols, options `listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']`
+    - wrfchem_bin_limits  Wrf-chem aerosol siz bins `[3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5]`
+    - listspec            PALM aerosol species, only aerosols, options __listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']__
     - nbin                SALSA parameter, # size bins in subrange `[1,7]`
     - reglim              SALSA parameter, subrange limits `[3.9e-8, 5.0e-8, 2.5e-6]`
     - nf2a                SALSA parameter, insoluble fraction, currently only soluble supported in PALM (1.0)
