@@ -1,4 +1,4 @@
-#Scripts for processing of WRF-CHEM files to PALM dynamic driver.#
+#Scripts for processing of WRF-CHEM files to PALM dynamic driver.
 
 Version: v.1.0
 
