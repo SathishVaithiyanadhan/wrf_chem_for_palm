@@ -4,13 +4,13 @@ Version: v.1.0
 
 The scripts are based on the [wrf-CAMx interface](https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface)
 
-Usage: `palm_dynamic -c <config_name> [-w]`
+**Usage:**
+- `palm_dynamic -c <config_name> [-w]`
+- The optional parameter -w allows to skip horizontal and vertical interpolation in case it has already been done.
+- Example: `python3 palm_dynamic.py -c augsburg_validation_summer_10`
 
-The optional parameter -w allows to skip horizontal and vertical interpolation in case it has already been done.
 
-Example: `python3 palm_dynamic.py -c augsburg_validation_summer_10`
-
-The script requires the following:
+**Script requirement:**
 - The name of the case configuration on the command line.
 - The corresponding configuration file `config_name.conf` in the `configuration` subdirectory. 
 - The values which agree with defaults do not need to be set. `palm_dynamic_init.py` contains setting and calculation of standard  initialization values for particular system and can be adjusted.
@@ -22,18 +22,15 @@ The script requires the following:
 - [netCDF4](https://pypi.org/project/netCDF4)
 - [metpy](https://unidata.github.io/MetPy)
 
-In the current version, the only supported projection in WRF-CHEM is
-Lambertiam conformal conic, which is WRF default and recommended projection for
+In the current version, the only supported projection in WRF-CHEM is Lambertiam conformal conic, which is WRF default and recommended projection for
 mid-latitudes.
 
-The scripts support both variants of WRF-CHEM vertical levels - the sigma levels
-(default until WRF version 3.*) and the hybrid levels (default since WRF 4.*).
-However, it is necessary to correctly configure this option via the setting
-"wrf_hybrid_levs = True/False".
+The scripts support both variants of WRF-CHEM vertical levels - the sigma levels (default until WRF version 3.*) and the hybrid levels (default since WRF 4.*). However, it is necessary to correctly configure this option via the setting `wrf_hybrid_levs = True/False`.
 
-# CONFIGURATION
+# Configuration parameters
 Description of the particular configuration options are (defaults are in parenthesis):
-## 1. Domain and case related configurations
+
+## Domain and case related configurations
     - domain              name of the simulation case ("")
     - resolution          name of the particular domain resolution scenario ("")
     - scenario            name of the individual scenario in the case ("")
@@ -54,7 +51,7 @@ Description of the particular configuration options are (defaults are in parenth
     - origin_time         origin time of the PALM simulation in the format YYYY-MM-DD hh:mm:ss (""). The default value "" means that the value is read from the global attribute of the static driver.
     - simulation_hours    extent of the simulation in hours
 
-## 2. WRF-CHEM related configurations
+## WRF-CHEM related configurations
     - wrf_dir_name        file path of the wrf-chem input files (""). 
     - wrf_file_mask       file mask of the wrf-chem input files  ("wrfout_*.e000")
     - wrf_hybrid_levs     True means hybrid levels in WRF files, False means sigma levels (True).
@@ -74,7 +71,7 @@ Description of the particular configuration options are (defaults are in parenth
     - wrf_rad_file_mask   file mask of the wrf radiation input files ("auxhist6_*"). The default setting reads radiation from WRF auxiliary history files. This setting allows to use finer time step for WRF radiation outputs than for other values.
     - radiation_smoothing_distance smoothing distance for radiation values in m (10000.0).
 
-## 3. Horizontal parameters of the PALM domain which have to be set in case of grid_from_static = False
+## Horizontal parameters of the PALM domain which have to be set in case of grid_from_static = False
     - nx, ny              number of horizontal grids of the domain in x and y directions
     - dx, dy              grid cell size of the domain in x and y directions
     - origin_x, origin_y  origin x and y of the domain
