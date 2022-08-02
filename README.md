@@ -5,14 +5,15 @@ Version: v.1.0
 The scripts are based on the [wrf-CAMx interface](https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface)
 
 Usage: `palm_dynamic -c <config_name> [-w]`
+
 The optional parameter -w allows to skip horizontal and vertical interpolation in case it is already done.
+
 Example: `python3 palm_dynamic.py -c augsburg_validation_summer_10`
 
-The script requires name of the case configuration on the command line.
-The corresponding configuration files are placed in subdirectory
-"configuration" and they are named <config_name>.conf. The values which
-agree with defaults need not be present in the user config. The file
-palm_dynamic_init.py contains setting and calculation of standard 
+The script requires the following:
+    * The name of the case configuration on the command line.
+    * The corresponding configuration file `config_name.conf` in the `configuration` subdirectory. 
+    * The values which agree with defaults do not need to be set. `palm_dynamic_init.py` contains setting and calculation of standard 
 initialization values for particular system and can be adjusted.
 
 Needed modules are:
