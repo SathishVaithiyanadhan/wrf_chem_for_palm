@@ -31,25 +31,25 @@ The scripts support both variants of WRF-CHEM vertical levels - the sigma levels
 Description of the particular configuration options are (defaults are in parenthesis):
 
 ## Domain and case related configurations
-    - domain              name of the simulation case ("")
-    - resolution          name of the particular domain resolution scenario ("")
-    - scenario            name of the individual scenario in the case ("")
+    - `domain`              Name of the simulation case ("")
+    - resolution          Name of the particular domain resolution scenario ("")
+    - scenario            Mame of the individual scenario in the case ("")
     - nested_domain       False indicates parent and True nested domain. (False)
 
-    - dynamic_driver_file file name of output dynamic driver ("").
+    - dynamic_driver_file File name of output dynamic driver ("").
     - grid_from_static    True - the grid parameters are imported from the static driver, False - they are prescribed in the config (True)
-    - static_driver_file  file name of the static driver in case of grid_from_static ("").
-    - proj_palm           reference coordinate system of PALM simulation ("EPSG:32633")
-    - proj_wgs84          reference coordinate system of lon-lat projection ("EPSG:4326")
+    - static_driver_file  File name of the static driver in case of grid_from_static ("").
+    - proj_palm           Reference coordinate system of PALM simulation ("EPSG:32633")
+    - proj_wgs84          Reference coordinate system of lon-lat projection ("EPSG:4326")
     
-    - dz                  height of the PALM vertical grid layer (0.0). The default value dz = 0.0 means dz is assigned from dx.
-    - nz                  number of vertical layers of PALM domain (200)
-    - dz_stretch_level    height in meters from which stretching of vertical levels starts in PALM (5000.0)
-    - dz_stretch_factor   coefficient of the stretching of the vertical layers in PALM (1.0)
-    - dz_max              max height of the stretched vertical layers (100.0)
+    - dz                  Height of the PALM vertical grid layer (0.0). The default value dz = 0.0 means dz is assigned from dx.
+    - nz                  Number of vertical layers of PALM domain (200)
+    - dz_stretch_level    Height in meters from which stretching of vertical levels starts in PALM (5000.0)
+    - dz_stretch_factor   Coefficient of the stretching of the vertical layers in PALM (1.0)
+    - dz_max              Max height of the stretched vertical layers (100.0)
     
-    - origin_time         origin time of the PALM simulation in the format YYYY-MM-DD hh:mm:ss (""). The default value "" means that the value is read from the global attribute of the static driver.
-    - simulation_hours    extent of the simulation in hours
+    - origin_time         Origin time of the PALM simulation in the format YYYY-MM-DD hh:mm:ss (""). Default reads from static driver.
+    - simulation_hours    Extent of the simulation in hours
 
 ## WRF-CHEM related configurations
     - wrf_dir_name        file path of the wrf-chem input files (""). 
