@@ -11,9 +11,9 @@ The optional parameter -w allows to skip horizontal and vertical interpolation i
 Example: `python3 palm_dynamic.py -c augsburg_validation_summer_10`
 
 The script requires the following:
-    * The name of the case configuration on the command line.
-    * The corresponding configuration file `config_name.conf` in the `configuration` subdirectory. 
-    * The values which agree with defaults do not need to be set. `palm_dynamic_init.py` contains setting and calculation of standard 
+    - The name of the case configuration on the command line.
+    - The corresponding configuration file `config_name.conf` in the `configuration` subdirectory. 
+    - The values which agree with defaults do not need to be set. `palm_dynamic_init.py` contains setting and calculation of standard 
 initialization values for particular system and can be adjusted.
 
 Needed modules are:
