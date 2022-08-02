@@ -72,10 +72,10 @@ Description of the particular configuration options are (defaults are in parenth
     - radiation_smoothing_distance smoothing distance for radiation values in m (10000.0).
 
 ## Horizontal parameters of the PALM domain which have to be set in case of grid_from_static = False
-`nx, ny`              Number of horizontal grids of the domain in x and y directions
-`dx, dy`              Grid cell size of the domain in x and y directions
-`origin_x, origin_y`  Origin x and y of the domain
-`origin_z`            Origin of the domain in the vertical direction
+* `nx, ny`              Number of horizontal grids of the domain in x and y directions.
+* `dx, dy`              Grid cell size of the domain in x and y directions.
+* `origin_x, origin_y`  Origin x and y of the domain.
+* `origin_z`            Origin of the domain in the vertical direction.
 
 ###  Major Changes from wrf + CAMx scripts made to wrf_chem_for_palm
 - Proj future warning resolved
