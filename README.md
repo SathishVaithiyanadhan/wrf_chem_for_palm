@@ -1,7 +1,7 @@
-Scripts for processing of WRF-CHEM files to PALM dynamic driver.
+**Scripts for processing of WRF-CHEM files to PALM dynamic driver.**
 Version: v.1.0
 
-The scripts are based on the (wrf-CAMx interface)[https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface]
+The scripts are based on the [wrf-CAMx interface](https://palm.muk.uni-hannover.de/trac/wiki/doc/app/iofiles/wrf_interface)
 
 Usage: palm_dynamic -c <config_name> [-w]
 The optional parameter -w allows to skip horizontal and vertical
@@ -16,11 +16,11 @@ palm_dynamic_init.py contains setting and calculation of standard
 initialization values for particular system and can be adjusted.
 
 Needed modules are:
-- numpy   (https://pypi.org/project/numpy)
-- scipy   (https://pypi.org/project/scipy)
-- pyproj  (https://pypi.org/project/pyproj)
-- netCDF4 (https://pypi.org/project/netCDF4)
-- metpy   (https://unidata.github.io/MetPy)
+- [numpy](https://pypi.org/project/numpy)
+- [scipy](https://pypi.org/project/scipy)
+- [pyproj](https://pypi.org/project/pyproj)
+- [netCDF4](https://pypi.org/project/netCDF4)
+- [metpy](https://unidata.github.io/MetPy)
 
 In the current version, the only supported projection in WRF-CHEM is
 Lambertiam conformal conic, which is WRF default and recommended projection for
