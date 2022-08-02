@@ -55,43 +55,30 @@ Description of the particular configuration options are (defaults are in parenth
     - simulation_hours    extent of the simulation in hours
 
 ## 2. WRF-CHEM related configurations
+    - wrf_dir_name        file path of the wrf-chem input files (""). 
+    - wrf_file_mask       file mask of the wrf-chem input files  ("wrfout_*.e000")
+    - wrf_hybrid_levs     True means hybrid levels in WRF files, False means sigma levels (True).
+    - vinterp_terrain_smoothing
+        - the standard deviation for Gaussian kernel of smoothing method of the PALM terrain for WRF vertical interpolation to avoid sharp horizontal gradients. Value None disables the smoothing. (None)
+    - interp_dir_name     file path to interpolated files
+    - wrfchem_spec        wrf-chem chemical species to be included in dynamic driver, list of gaseous species: no, no2, no3, pm10, PM2_5_DRY, o3, co, hno3, ho, h2o2, nh3
 
-wrf_dir_name        file path of the wrf-chem input files ("").
-wrf_file_mask       file mask of the wrf-chem input files  ("wrfout_*.e000")
-wrf_hybrid_levs     True means hybrid levels in WRF files, False means sigma levels (True).
-vinterp_terrain_smoothing
-                    the standard deviation for Gaussian kernel of smoothing method of
-                    the PALM terrain for WRF vertical interpolation to avoid sharp
-                    horizontal gradients. Value None disables the smoothing. (None)
-interp_dir_name     file path to interpolated files
-
-wrfchem_spec        wrf-chem chemical species to be included in dynamic driver, list
-                    of gaseous species: no, no2, no3, pm10, PM2_5_DRY, o3, co, hno3, ho, h2o2, nh3
-
-aerosol_wrfchem     True means aerosols are included, (False)
-wrfchem_bin_limits  wrf-chem aerosol siz bins ([3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5])
-listspec            PALM aerosol species, only aerosols, 
-                    options listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']
-nbin                SALSA parameter, # size bins in subrange ([1,7])
-reglim              SALSA parameter, subrange limits ([3.9e-8, 5.0e-8, 2.5e-6])
-nf2a                SALSA parameter, insoluble fraction, currently only soluble supported
-                    in PALM (1.0)
+    - aerosol_wrfchem     True means aerosols are included, (False)
+    - wrfchem_bin_limits  wrf-chem aerosol siz bins `[3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5]`
+    - listspec            PALM aerosol species, only aerosols, options `listspec = ['SO4', 'OC', 'BC', 'DU', 'SS', 'NH', 'NO']`
+    - nbin                SALSA parameter, # size bins in subrange `[1,7]`
+    - reglim              SALSA parameter, subrange limits `[3.9e-8, 5.0e-8, 2.5e-6]`
+    - nf2a                SALSA parameter, insoluble fraction, currently only soluble supported in PALM (1.0)
                  
-radiation_from_wrf  enable or disable processing of radiation from WRF files (True).
-wrf_rad_file_mask   file mask of the wrf radiation input files ("auxhist6_*").
-                    The default setting reads radiation from WRF auxiliary
-                    history files. This setting allows to use finer time step for WRF
-                    radiation outputs than for other values.
-radiation_smoothing_distance
-                    smoothing distance for radiation values in m (10000.0).
+    - radiation_from_wrf  enable or disable processing of radiation from WRF files (True).
+    - wrf_rad_file_mask   file mask of the wrf radiation input files ("auxhist6_*"). The default setting reads radiation from WRF auxiliary history files. This setting allows to use finer time step for WRF radiation outputs than for other values.
+    - radiation_smoothing_distance smoothing distance for radiation values in m (10000.0).
 
 ## 3. Horizontal parameters of the PALM domain which have to be set in case of grid_from_static = False
-
-nx, ny              number of horizontal grids of the domain in x and y directions
-dx, dy              grid cell size of the domain in x and y directions
-origin_x, origin_y  origin x and y of the domain
-origin_z            origin of the domain in the vertical direction
-
+    - nx, ny              number of horizontal grids of the domain in x and y directions
+    - dx, dy              grid cell size of the domain in x and y directions
+    - origin_x, origin_y  origin x and y of the domain
+    - origin_z            origin of the domain in the vertical direction
 
 ###  Major Changes from wrf + CAMx scripts made to wrf_chem_for_palm
 - Proj future warning resolved
