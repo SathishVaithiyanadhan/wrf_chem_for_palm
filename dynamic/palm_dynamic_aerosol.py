@@ -36,14 +36,14 @@ def upwind_location(zlev, u, v):
         prf_x = round(wnd_dir.shape[1]/2)
     elif 45 < wnd_avg <= 135:
         prf_y = round(wnd_dir.shape[0]/2)
-        prf_x = round(wnd_dir.shape[1])
+        prf_x = round(wnd_dir.shape[1]-1)
     elif 135 < wnd_avg <= 225:
-        prf_y = wnd_dir.shape[0]
+        prf_y = wnd_dir.shape[0]-1
         prf_x = round(wnd_dir.shape[1]/2)
     else:
         prf_y = round(wnd_dir.shape[0]/2)
         prf_x = 0
-
+    
     return prf_x, prf_y
 
 

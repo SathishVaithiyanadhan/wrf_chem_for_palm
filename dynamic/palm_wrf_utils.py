@@ -221,10 +221,10 @@ def calc_gp(f, ph):
 def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
         z_soil_levels, origin_z, terrain, wrf_hybrid_levs, vinterp_terrain_smoothing,nz,ny,nx):
 
-    zdim = len(z_levels)
-    zwdim = len(z_levels_stag)
-    zsoildim = len(z_soil_levels)
-    dimnames = ['z', 'zw', 'zsoil']   # dimnames of palm vertical dims
+    zdim       = len(z_levels)
+    zwdim      = len(z_levels_stag)
+    zsoildim   = len(z_soil_levels)
+    dimnames   = ['z', 'zw', 'zsoil']   # dimnames of palm vertical dims
     dimensions = [zdim , zwdim, zsoildim]
 
     try:
@@ -257,28 +257,28 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
         wrfterr.min(), wrfterr.max(), target_terrain.min(), target_terrain.max()))
 
     # Load original dry air column pressure
-    mu = nc_infile.variables['MUB'][0,:,:] + nc_infile.variables['MU'][0,:,:]
+    mu  = nc_infile.variables['MUB'][0,:,:] + nc_infile.variables['MU'][0,:,:]
     pht = nc_wrf.variables['P_TOP'][0]
 
     # Shift column pressure so that it matches PALM terrain
-    t = wrf_t(nc_infile)
+    t   = wrf_t(nc_infile)
     mu2 = barom_pres(mu+pht, target_terrain*g, gpf[0,:,:], t[0,:,:])-pht
 
     # Calculate original and shifted 3D dry air pressure
     if wrf_hybrid_levs:
-        phf, phh = calc_ph_hybrid(nc_wrf, mu)
+        phf, phh   = calc_ph_hybrid(nc_wrf, mu)
         phf2, phh2 = calc_ph_hybrid(nc_wrf, mu2)
     else:
-        phf, phh = calc_ph_sigma(nc_wrf, mu)
+        phf, phh   = calc_ph_sigma(nc_wrf, mu)
         phf2, phh2 = calc_ph_sigma(nc_wrf, mu2)
 
     # Shift 3D geopotential according to delta dry air pressure
-    tf = np.concatenate((t, t[-1:,:,:]), axis=0) # repeat highest layer
+    tf   = np.concatenate((t, t[-1:,:,:]), axis=0) # repeat highest layer
     gpf2 = barom_gp(gpf, phf2, phf, tf)
     # For half-levs, originate from gp full levs rather than less accurate gp halving
     gph2 = barom_gp(gpf[:-1,:,:], phh2, phf[:-1,:,:], t)
-    zf = gpf2 * (1./g) - origin_z
-    zh = gph2 * (1./g) - origin_z
+    zf   = gpf2 * (1./g) - origin_z
+    zh   = gph2 * (1./g) - origin_z
 
     # Report
     gpdelta = gpf2 - gpf

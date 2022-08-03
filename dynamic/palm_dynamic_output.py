@@ -270,7 +270,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     
     # read interpolated files and write values for dynamical & chemical variables
     def add_interpValues(dynam_chem_variables):
-        print('\tCreating initialisation variablesin dynamic driver')
+        print('\tCreating initialisation variables in dynamic driver')
         infile = netCDF4.Dataset(interp_files[0], "r", format="NETCDF4")
         outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
         # initialization variables

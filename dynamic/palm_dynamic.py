@@ -84,6 +84,7 @@ print('WRF-CHEM file path:', wrf_dir_name)
 print('WRF-CHEM: dynamics file mask:', wrf_file_mask)
 print('Simulation start time:', origin_time)
 print('Simulation hours:', simulation_hours)
+
 if aerosol_wrfchem:
     print('\nNumber of aerosol size bins in subranges (nbin): ', nbin)
     print('Aerosol diameter limits of subrnages (reglim): ', reglim)
@@ -243,9 +244,9 @@ ztop = z_levels[-1] + dzs / 2.
 # get complete list of wrf files
 wrf_file_list = glob.glob(os.path.join(wrf_dir_name, wrf_file_mask))
 # get simulation origin and final time as datetime
-start_time = datetime.strptime(origin_time, '%Y-%m-%d %H:%M:%S')
-end_time = start_time + timedelta(hours=simulation_hours)
-end_time_rad = end_time
+start_time    = datetime.strptime(origin_time, '%Y-%m-%d %H:%M:%S')
+end_time      = start_time + timedelta(hours=simulation_hours)
+end_time_rad  = end_time
 print('\nPALM simulation extent', start_time, end_time, simulation_hours)
 if nested_domain:
     print('Nested domain - process only initialization.')
@@ -253,13 +254,13 @@ if nested_domain:
     end_time = start_time
 
 # get wrf times and sort wrf files by time
-#print('\nAnalyse WRF files dates:')
+#print('\nWRF files in directory:')
 file_times = []
 for wrf_file in wrf_file_list:
     nc_wrf = netCDF4.Dataset(wrf_file, "r", format="NETCDF4")
-    ta = nc_wrf.variables['Times'][:]
-    t = ta.tobytes().decode("utf-8")
-    td = datetime.strptime(t, '%Y-%m-%d_%H:%M:%S')
+    ta     = nc_wrf.variables['Times'][:]
+    t      = ta.tobytes().decode("utf-8")
+    td     = datetime.strptime(t, '%Y-%m-%d_%H:%M:%S')
     #print(os.path.basename(wrf_file), ': ', td)
     file_times.append((td,wrf_file))
     nc_wrf.close()
@@ -272,7 +273,7 @@ for tf in file_times:
         times.append(tf[0])
         wrf_files.append(tf[1])
 
-print('PALM output times:', ', '.join('{}'.format(t) for t in times))
+print('WRF input file times:', ', '.join('{}'.format(t) for t in times))
 
 if not times.__contains__(start_time):
     print('WRF files does not contain PALM origin_time timestep - cannot process!')
@@ -319,10 +320,10 @@ interp_files = []
 regridder = None
 for wrf_file in wrf_files_proc:
     print ("Input wrf file: ", wrf_file)
-    pth,fnam = os.path.split(wrf_file)
-    hinterp_file = (os.path.join(interp_dir_name, fnam))+"_"+simul_id+'.hinterp'
-    hinterp_log = (os.path.join(interp_dir_name, fnam))+"_"+simul_id+'.hinterp.log'
-    vinterp_file = (os.path.join(interp_dir_name, fnam))+"_"+simul_id+'.interp'
+    pth,fnam     = os.path.split(wrf_file)
+    hinterp_file = (os.path.join(interp_dir_name, fnam)) +"_"+ simul_id +'.hinterp'
+    hinterp_log  = (os.path.join(interp_dir_name, fnam)) +"_"+ simul_id +'.hinterp.log'
+    vinterp_file = (os.path.join(interp_dir_name, fnam)) +"_"+ simul_id +'.interp'
     interp_files.append(vinterp_file)
 
     if wrf_interpolation:
