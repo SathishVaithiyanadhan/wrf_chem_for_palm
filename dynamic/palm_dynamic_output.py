@@ -325,7 +325,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     if (var == 'soil_m' or var == 'soil_t' or var == 'u' or var == 'v' or var == 'w'):
                         continue
                     else:
-                        if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv'):
+                        if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv' or var == 'no' or var == 'no2' or var == 'no3'):
                             var = var.upper()
 
                         init_var= infile.variables['init_atmosphere_'+ var.lower()]

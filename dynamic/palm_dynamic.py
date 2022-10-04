@@ -214,7 +214,7 @@ print('cent_lon, cent_lat:', cent_lon, cent_lat)
 irange = origin_x + dx * (np.arange(nx, dtype='f8') + .5)
 jrange = origin_y + dy * (np.arange(ny, dtype='f8') + .5)
 palm_grid_y, palm_grid_x = np.meshgrid(jrange, irange, indexing='ij')
-transformer2 = Transformer.from_crs(inproj, lonlatproj,always_xy=True)
+transformer2 = Transformer.from_crs(inproj, lonlatproj, always_xy=True)
 palm_grid_lon, palm_grid_lat = transformer2.transform(palm_grid_x, palm_grid_y)
 
 ######################################
@@ -360,13 +360,15 @@ for wrf_file in wrf_files_proc:
                 # create list of variables
                 # dynamical variables
                 wrfchem_dynamic = ['PH', 'PHB', 'HGT', 'T', 'W', 'TSLB', 'SMOIS', 'MU', 'MUB','P', 'PB', 'PSFC']
+                
                 # add chemical species if included
                 if len(wrfchem_spec)>0:
                     wrfchem_variables = wrfchem_dynamic + wrfchem_spec
 
                 # add aerosol species if included
-                N_avr = 6.022e23 # Avargardo constant
-                inv_den = f_wrf.variables['ALT'][0] # inverse density
+                N_avr   = 6.022e23                  # Avargardo constant
+                inv_den = f_wrf.variables['ALT'][0] # Inverse density
+                t00     = f_wrf.variables['T00'][0] # Perturbation pt to standard (T00 wrf-chem variable)
 
                 for varname in wrfchem_variables:
                     # gaseous aerosols
@@ -487,7 +489,7 @@ for wrf_file in wrf_files_proc:
         print('Vertical interpolation...')
         palm_wrf_utils.palm_wrf_vertical_interp(hinterp_file, vinterp_file, wrf_file, z_levels,
                                                 z_levels_stag, z_soil_levels, origin_z, terrain,
-                                                wrf_hybrid_levs, vinterp_terrain_smoothing, nz, ny, nx)
+                                                wrf_hybrid_levs, vinterp_terrain_smoothing, nz, ny, nx, t00)
 
 if radiation_from_wrf:
     print('Start processing of radiation inputs from the WRF radiation files.')

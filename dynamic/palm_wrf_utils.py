@@ -219,7 +219,7 @@ def calc_gp(f, ph):
     return np.array(gp)
 
 def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
-        z_soil_levels, origin_z, terrain, wrf_hybrid_levs, vinterp_terrain_smoothing,nz,ny,nx):
+        z_soil_levels, origin_z, terrain, wrf_hybrid_levs, vinterp_terrain_smoothing, nz, ny, nx, t00_raw):
 
     zdim       = len(z_levels)
     zwdim      = len(z_levels_stag)
@@ -232,7 +232,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
         os.remove(infile+'_vinterp.log')
     except:
         pass
-
     nc_infile  = netCDF4.Dataset(infile, 'r')
     nc_wrf     = netCDF4.Dataset(wrffile, 'r')
     nc_outfile = netCDF4.Dataset(outfile, "w", format="NETCDF4")
@@ -303,7 +302,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     vdata = nc_outfile.createVariable('init_atmosphere_qv', "f4", ("Time", "z","south_north","west_east"))
     vdata[0,:,:,:] = init_atmosphere_qv
     # ======================= POTENTIAL TEMPERATURE ==========================
-    pt_raw = nc_infile.variables['T'][0] + 290.    # from perturbation pt to standard (T00 wrf-chem variable)
+    pt_raw = nc_infile.variables['T'][0] + t00_raw
     pt_raw = np.r_[pt_raw[0:1], pt_raw]
     init_atmosphere_pt = interpolate_1d(z_levels, height, pt_raw)
     
