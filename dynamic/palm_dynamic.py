@@ -132,7 +132,7 @@ if grid_from_static:
     th = np.ceil(terrain_rel / dz)
     # building height
     if 'buildings_3d' in ncs.variables.keys():
-        print(np.argmax(a != 0, axis=0))
+        #print(np.argmax(a != 0, axis=0))
         bh3 = ncs.variables['buildings_3d'][:]
         # minimum index of nonzeo value along inverted z
         bh = np.argmax(bh3[::-1], axis=0)
@@ -364,6 +364,8 @@ for wrf_file in wrf_files_proc:
                 # add chemical species if included
                 if len(wrfchem_spec)>0:
                     wrfchem_variables = wrfchem_dynamic + wrfchem_spec
+                else:
+                    wrfchem_variables = wrfchem_dynamic
 
                 # add aerosol species if included
                 N_avr   = 6.022e23                  # Avargardo constant
