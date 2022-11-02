@@ -425,6 +425,11 @@ for wrf_file in wrf_files_proc:
                             cnt = cnt + 1
                         v_out = f_out.createVariable(varname, 'f4', svoc_data.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                    # PM10
+                    elif varname == 'PM10':
+                        v_wrf = f_wrf.variables[varname]
+                        v_out = f_out.createVariable(varname.lower(), 'f4', v_wrf.dimensions)
+                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
                     else:
                         # other dynamical & chemical variables
                         v_wrf = f_wrf.variables[varname]

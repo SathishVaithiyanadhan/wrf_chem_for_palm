@@ -279,8 +279,12 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                 init_var = infile.variables['init_'+var]
                 _val_init_var = outfile.variables['init_'+var]
             elif var in wrfchem_spec:
-                init_var = infile.variables['init_atmosphere_'+ var]
-                _val_init_var = outfile.variables['init_atmosphere_'+ var.upper()]
+                if var == 'PM10':
+                    init_var = infile.variables['init_atmosphere_'+ var.lower()]
+                    _val_init_var = outfile.variables['init_atmosphere_'+ var]
+                else:
+                    init_var = infile.variables['init_atmosphere_'+ var]
+                    _val_init_var = outfile.variables['init_atmosphere_'+ var.upper()]
             else:
                 init_var = infile.variables['init_atmosphere_'+ var]
                 _val_init_var = outfile.variables['init_atmosphere_'+ var]
@@ -328,7 +332,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                         if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv' or var == 'no' or var == 'no2' or var == 'no3'):
                             var = var.upper()
 
-                        init_var= infile.variables['init_atmosphere_'+ var.lower()]
+                        init_var = infile.variables['init_atmosphere_'+ var.lower()]
                         for side in boundary:
                             _val_ls_forcing_var = outfile.variables['ls_forcing_'+ side +'_'+var]
                             if side == 'left':
