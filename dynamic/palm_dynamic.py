@@ -427,9 +427,10 @@ for wrf_file in wrf_files_proc:
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
                     # PM10
                     elif varname == 'PM10':
-                        v_wrf = f_wrf.variables[varname]
-                        v_out = f_out.createVariable(varname.lower(), 'f4', v_wrf.dimensions)
-                        v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
+                        v_wrf     = f_wrf.variables[varname]
+                        v_wrf_val = f_wrf.variables[varname][:]*1e-9
+                        v_out     = f_out.createVariable(varname.lower(), 'f4', v_wrf.dimensions)
+                        v_out[:]  = regridder.regrid(v_wrf_val[...,regridder.ys,regridder.xs])
                     else:
                         # other dynamical & chemical variables
                         v_wrf = f_wrf.variables[varname]

@@ -366,7 +366,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
             if (spec == 'PM10' or spec == 'PM2_5_DRY'):
                 chem_data_raw  = nc_infile.variables[spec.lower()][0]
                 chem_data_raw  = np.r_[chem_data_raw[0:1], chem_data_raw]
-                chem_data  = interpolate_1d(z_levels, height, (chem_data_raw)*1e-9)
+                chem_data  = interpolate_1d(z_levels, height, (chem_data_raw))
                 vdata          = nc_outfile.createVariable('init_atmosphere_'+spec.lower(),"f4",("Time", "z","south_north","west_east"))
                 vdata[0,:,:,:] = chem_data
             # other chemical species
@@ -377,16 +377,6 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
                 vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
                 vdata[0,:,:,:] = chem_data
 
-           # if (spec == 'PM10' or spec == 'PM2_5_DRY'):
-           #     chem_data  = interpolate_1d(z_levels, height, (chem_data_raw)*1e-9)
-
-           # # other chemical species
-           # else:
-           #     chem_data  = interpolate_1d(z_levels, height, chem_data_raw)
-
-            #vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
-            #vdata[0,:,:,:] = chem_data
-        
     chem_from_wrfchem(wrfchem_spec)
     # ======================== AEROSOLS =====================================
     # aerosol mass fraction for each aerosol species - interpolate

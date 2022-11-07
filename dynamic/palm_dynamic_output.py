@@ -179,27 +179,28 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         for var in dynam_chem_variables:
             if (var == 'pt' or var == 'qv'):
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "y", "x"),fill_value=fillvalue_float)
+                _val_init_var.setncattr('lod', 2)
             elif (var == 'soil_m' or var == 'soil_t'):
                 _val_init_var = outfile.createVariable('init_'+ var,"f4", ("zsoil", "y", "x"),fill_value=fillvalue_float)
+                _val_init_var.setncattr('lod', 2)
             elif var == 'u':
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "y", "xu"),fill_value=fillvalue_float)
+                _val_init_var.setncattr('lod', 2)
             elif var == 'v':
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("z", "yv", "x"),fill_value=fillvalue_float)
+                _val_init_var.setncattr('lod', 2)
             elif var == 'w':
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4", ("zw", "y", "x"),fill_value=fillvalue_float)
+                _val_init_var.setncattr('lod', 2)
             elif var in wrfchem_spec:
                 _val_init_var = outfile.createVariable('init_atmosphere_'+ var.upper(), "f4", ("z",),fill_value=fillvalue_float)
-            else:
-                _val_init_var = outfile.createVariable('init_atmosphere_'+ var, "f4",('z',),fill_value=fillvalue_float)
-            # add attributes
-            if var in atmos_var:
-                _val_init_var.setncattr('lod', 2)
-            else:
-                _val_init_var.setncattr('lod', 1)
                 if (var == 'PM10' or var == 'PM2_5_DRY'):
+                    _val_init_var.setncattr('lod', 1)
                     _val_init_var.setncattr('units','kg/m3')
                 else:
+                    _val_init_var.setncattr('lod', 1)
                     _val_init_var.setncattr('units','ppm')
+
             # create time dependent variables        
             if not nested_domain:
                 if (var == 'soil_m' or var == 'soil_t'):
@@ -262,7 +263,6 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                                 _val_ls_forcing.setncattr('units', 'kg/m3')
                             else:
                                 _val_ls_forcing.setncattr('units', 'ppm')
-        #outfile.close()
     # function - create dynamical & chemical variables
     add_interpDim(dynam_chem_variables)
 
@@ -275,31 +275,37 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         outfile = netCDF4.Dataset(dynamic_driver_file, "r+", format="NETCDF4")
         # initialization variables
         for var in dynam_chem_variables:
-            if (var == 'soil_m' or var == 'soil_t'):
+            if var == 'soil_m':
                 init_var = infile.variables['init_'+var]
                 _val_init_var = outfile.variables['init_'+var]
+                for k in range(0,_val_init_var.shape[0]):
+                    _val_init_var[k, :, :] = init_var[0, k, :, :] * sma[:, :]
+
+            elif var == 'soil_t':
+                init_var = infile.variables['init_'+var]
+                _val_init_var = outfile.variables['init_'+var]
+                _val_init_var[:, :, :] = init_var[0, :, :, :]
+
+            elif (var == 'pt' or var == 'qv' or var == 'w' or var == 'u' or var == 'v'):
+                init_var = infile.variables['init_atmosphere_'+ var]
+                _val_init_var = outfile.variables['init_atmosphere_'+ var]
+                if var == 'u':
+                    _val_init_var[:, :, :] = init_var[0, :, :, 1:]
+                elif var == 'v':
+                    _val_init_var[:, :, :] = init_var[0, :, 1:, :]
+                elif (var == 'pt' or var == 'qv' or var == 'w'):
+                    _val_init_var[:, :, :] = init_var[0, :, :, :]
+
             elif var in wrfchem_spec:
                 if var == 'PM10':
                     init_var = infile.variables['init_atmosphere_'+ var.lower()]
                     _val_init_var = outfile.variables['init_atmosphere_'+ var]
+                    _val_init_var[:] = init_var[0,:,:,:].mean(axis=(1,2))
                 else:
                     init_var = infile.variables['init_atmosphere_'+ var]
                     _val_init_var = outfile.variables['init_atmosphere_'+ var.upper()]
-            else:
-                init_var = infile.variables['init_atmosphere_'+ var]
-                _val_init_var = outfile.variables['init_atmosphere_'+ var]
-            # write values
-            if (var == 'pt' or var == 'qv' or var == 'w' or var == 'soil_t'):
-                _val_init_var[:, :, :] = init_var[0, :, :, :]
-            elif var == 'u':
-                _val_init_var[:, :, :] = init_var[0, :, :, 1:]
-            elif var == 'v':
-                _val_init_var[:, :, :] = init_var[0, :, 1:, :]
-            elif var == 'soil_m':
-                for k in range(0,_val_init_var.shape[0]):
-                    _val_init_var[k, :, :] = init_var[0, k, :, :] * sma[:, :]
-            if var in wrfchem_spec:
-                _val_init_var[:] = init_var[0,:,:,:].mean(axis=(1,2))
+                    _val_init_var[:] = init_var[0,:,:,:].mean(axis=(1,2))
+
         infile.close()
         outfile.close()
 
@@ -331,7 +337,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     else:
                         if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv' or var == 'no' or var == 'no2' or var == 'no3'):
                             var = var.upper()
-
+                        
                         init_var = infile.variables['init_atmosphere_'+ var.lower()]
                         for side in boundary:
                             _val_ls_forcing_var = outfile.variables['ls_forcing_'+ side +'_'+var]
