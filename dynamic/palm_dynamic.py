@@ -426,12 +426,19 @@ for wrf_file in wrf_files_proc:
                             cnt = cnt + 1
                         v_out = f_out.createVariable(varname, 'f4', svoc_data.dimensions)
                         v_out[:] = regridder.regrid(v_wrf[...,regridder.ys,regridder.xs])
-                    # PM10
+
+                     #PM10
                     elif varname == 'PM10':
-                        v_wrf     = f_wrf.variables[varname]
-                        v_wrf_val = f_wrf.variables[varname][:]*1e-9
-                        v_out     = f_out.createVariable(varname.lower(), 'f4', v_wrf.dimensions)
-                        v_out[:]  = regridder.regrid(v_wrf_val[...,regridder.ys,regridder.xs])
+                        v_wrf = f_wrf.variables['PM10']  # Use uppercase
+                        v_wrf_val = f_wrf.variables['PM10'][:] * 1e-9
+                        v_out = f_out.createVariable('PM10', 'f4', v_wrf.dimensions)  # Keep uppercase
+                        v_out[:] = regridder.regrid(v_wrf_val[..., regridder.ys, regridder.xs])
+                    # PM2.5
+                    elif varname == 'PM2_5_DRY':
+                        v_wrf = f_wrf.variables['PM2_5_DRY']  # Use uppercase
+                        v_wrf_val = f_wrf.variables['PM2_5_DRY'][:] * 1e-9
+                        v_out = f_out.createVariable('PM2_5_DRY', 'f4', v_wrf.dimensions)  # Keep uppercase
+                        v_out[:] = regridder.regrid(v_wrf_val[..., regridder.ys, regridder.xs])
                     else:
                         # other dynamical & chemical variables
                         v_wrf = f_wrf.variables[varname]

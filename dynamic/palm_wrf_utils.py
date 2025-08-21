@@ -340,7 +340,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     # zsoil is taken from wrf - do not need to define it
     # ======================== CHEMISTRY ===================================================
     # convert ppmv to ppm for PALM except PM10 & PM2_5_DRY: micrograms m-3 to kg/m3
-    def chem_from_wrfchem(wrfchem_spec):
+    '''def chem_from_wrfchem(wrfchem_spec):
         for spec in wrfchem_spec:
             if (spec == 'PM10' or spec == 'PM2_5_DRY'):
                 chem_data_raw  = nc_infile.variables[spec.lower()][0]
@@ -354,6 +354,26 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
                 chem_data_raw  = np.r_[chem_data_raw[0:1], chem_data_raw]
                 chem_data  = interpolate_1d(z_levels, height, chem_data_raw)
                 vdata          = nc_outfile.createVariable('init_atmosphere_'+spec,"f4",("Time", "z","south_north","west_east"))
+                vdata[0,:,:,:] = chem_data'''
+    def chem_from_wrfchem(wrfchem_spec):
+        for spec in wrfchem_spec:
+            # Handle PM2_5_DRY and PM10 specially - they use uppercase in WRF files
+            if spec == 'PM2_5_DRY' or spec == 'PM10':
+                # Use uppercase for WRF file access
+                chem_data_raw = nc_infile.variables[spec][0]
+                chem_data_raw = np.r_[chem_data_raw[0:1], chem_data_raw]
+                chem_data = interpolate_1d(z_levels, height, chem_data_raw)
+                # Use lowercase for output variable name
+                vdata = nc_outfile.createVariable('init_atmosphere_' + spec.lower(), "f4", 
+                                                ("Time", "z", "south_north", "west_east"))
+                vdata[0,:,:,:] = chem_data
+            # other chemical species
+            else:
+                chem_data_raw = nc_infile.variables[spec][0]
+                chem_data_raw = np.r_[chem_data_raw[0:1], chem_data_raw]
+                chem_data = interpolate_1d(z_levels, height, chem_data_raw)
+                vdata = nc_outfile.createVariable('init_atmosphere_' + spec, "f4", 
+                                                ("Time", "z", "south_north", "west_east"))
                 vdata[0,:,:,:] = chem_data
 
     chem_from_wrfchem(wrfchem_spec)

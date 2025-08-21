@@ -314,13 +314,14 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     _val_init_var[:, :, :] = init_var[0, :, :, :]
 
             elif var in wrfchem_spec:
-                if var == 'PM10':
-                    init_var = infile.variables['init_atmosphere_'+ var.lower()]
-                    _val_init_var = outfile.variables['init_atmosphere_'+ var]
+                if var == 'PM10' or var == 'PM2_5_DRY':
+                    # For PM species, use lowercase for variable access
+                    init_var = infile.variables['init_atmosphere_' + var.lower()]
+                    _val_init_var = outfile.variables['init_atmosphere_' + var]
                     _val_init_var[:] = init_var[0,:,:,:].mean(axis=(1,2))
                 else:
-                    init_var = infile.variables['init_atmosphere_'+ var]
-                    _val_init_var = outfile.variables['init_atmosphere_'+ var.upper()]
+                    init_var = infile.variables['init_atmosphere_' + var]
+                    _val_init_var = outfile.variables['init_atmosphere_' + var.upper()]
                     _val_init_var[:] = init_var[0,:,:,:].mean(axis=(1,2))
 
         infile.close()
@@ -352,7 +353,7 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                     if (var == 'soil_m' or var == 'soil_t' or var == 'u' or var == 'v' or var == 'w'):
                         continue
                     else:
-                        if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv' or var == 'no' or var == 'no2' or var == 'no3'):
+                        if (var == 'h2so4' or var=='hno3' or var== 'nh3' or var== 'ocnv' or var== 'ocsv' or var == 'no' or var == 'no2' or var == 'no3' or var == 'no3' or var == 'o3'):
                             var = var.upper()
                         
                         init_var = infile.variables['init_atmosphere_'+ var.lower()]
@@ -455,20 +456,17 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
         var[:] = rad_values_proc[2][:]
 
         outfile.close()
-    # correct chemical species names to PALM output
+        # correct chemical species names to PALM output
     outfile = netCDF4.Dataset(dynamic_driver_file, "a", format="NETCDF4")
-    if 'PM2_5_DRY' in dynam_chem_variables:
-        outfile.renameVariable('init_atmosphere_PM2_5_DRY','init_atmosphere_pm2_5')
-        outfile.renameVariable('ls_forcing_left_PM2_5_DRY', 'ls_forcing_left_pm2_5')
-        outfile.renameVariable('ls_forcing_right_PM2_5_DRY','ls_forcing_right_pm2_5')
-        outfile.renameVariable('ls_forcing_south_PM2_5_DRY','ls_forcing_south_pm2_5')
-        outfile.renameVariable('ls_forcing_north_PM2_5_DRY','ls_forcing_north_pm2_5')
-        outfile.renameVariable('ls_forcing_top_PM2_5_DRY','ls_forcing_top_pm2_5')
-    if 'PM10' in dynam_chem_variables:
-        outfile.renameVariable('init_atmosphere_PM10','init_atmosphere_pm10')
-        outfile.renameVariable('ls_forcing_left_PM10', 'ls_forcing_left_pm10')
-        outfile.renameVariable('ls_forcing_right_PM10','ls_forcing_right_pm10')
-        outfile.renameVariable('ls_forcing_south_PM10','ls_forcing_south_pm10')
-        outfile.renameVariable('ls_forcing_north_PM10','ls_forcing_north_pm10')
-        outfile.renameVariable('ls_forcing_top_PM10','ls_forcing_top_pm10')
+    
+    # Check if variables exist before renaming
+    if 'PM2_5_DRY' in dynam_chem_variables and 'init_atmosphere_PM2_5_DRY' in outfile.variables:
+        outfile.renameVariable('init_atmosphere_PM2_5_DRY', 'init_atmosphere_PM25')
+        # Rename boundary condition variables
+        for side in ['left', 'right', 'south', 'north', 'top']:
+            old_name = f'ls_forcing_{side}_PM2_5_DRY'
+            new_name = f'ls_forcing_{side}_PM25'
+            if old_name in outfile.variables:
+                outfile.renameVariable(old_name, new_name)
+    
     outfile.close()
