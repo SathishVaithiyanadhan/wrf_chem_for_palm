@@ -24,16 +24,16 @@ import palm_dynamic_aerosol
 
 # Constants directly equivalent to WRF code
 radius = 6370000.0
-g = 9.81 #m/s2
-rd = 287. #dry air gas constant (J/kg/K)
-rd_cp = 2./7. #from WRF v4 technote (R_d / c_p)
-wrf_base_temp = 300. #NOT wrfout T00
+g = 9.81  # m/s2
+rd = 287.  # dry air gas constant (J/kg/K)
+rd_cp = 2./7.  # from WRF v4 technote (R_d / c_p)
+wrf_base_temp = 300.  # NOT wrfout T00
 
 _ax = np.newaxis
 if aerosol_wrfchem:
     # Calculate overlap ratio the wrfchem and palm aerosol bins
-    open_bin, overlap_ratio =  palm_dynamic_aerosol.aerosol_binoverlap(reglim, wrfchem_bin_limits)
-    open_bin =  sorted(set(open_bin), key=open_bin.index)
+    open_bin, overlap_ratio = palm_dynamic_aerosol.aerosol_binoverlap(reglim, wrfchem_bin_limits)
+    open_bin = sorted(set(open_bin), key=open_bin.index)
 
 class WRFCoordTransform(object):
     'Coordinate transformer for WRFOUT files'
@@ -41,53 +41,32 @@ class WRFCoordTransform(object):
     def __init__(self, ncf):
         attr = lambda a: getattr(ncf, a)
         # Define grids
-        # see http://www.pkrc.net/wrf-lambert.html
-        #latlon_wgs84 = pyproj.Proj(proj='latlong',
-        #    ellps='WGS84', datum='WGS84',
-        #    no_defs=True) #don't use - WRF datum misuse
-
-        latlon_sphere = pyproj.Proj(proj='latlong',
-            a=radius, b=radius,
-            towgs84='0,0,0', no_defs=True)
-
+        latlon_sphere = pyproj.Proj(proj='latlong', a=radius, b=radius, towgs84='0,0,0', no_defs=True)
         lambert_grid = pyproj.Proj(proj='lcc',
-            lat_1=attr('TRUELAT1'),
-            lat_2=attr('TRUELAT2'),
-            lat_0=attr('MOAD_CEN_LAT'),
-            lon_0=attr('STAND_LON'),
-            a=radius, b=radius,
-            towgs84='0,0,0', no_defs=True)
+            lat_1=attr('TRUELAT1'), lat_2=attr('TRUELAT2'),
+            lat_0=attr('MOAD_CEN_LAT'), lon_0=attr('STAND_LON'),
+            a=radius, b=radius, towgs84='0,0,0', no_defs=True)
 
-        # resoltion in m
         self.dx = dx = attr('DX')
         self.dy = dy = attr('DY')
-
-        # number of mass grid points
         self.nx = nx = attr('WEST-EAST_GRID_DIMENSION') - 1
         self.ny = ny = attr('SOUTH-NORTH_GRID_DIMENSION') - 1
 
-        # distance between centers of mass grid points at edges
-        extent_x = (nx - 1) * dx
-        extent_y = (ny - 1) * dy
+        # Grid center in lambert
+        center_x, center_y = pyproj.transform(latlon_sphere, lambert_grid, attr('CEN_LON'), attr('CEN_LAT'))
 
-        # grid center in lambert
-        center_x, center_y = pyproj.transform(latlon_sphere, lambert_grid,
-            attr('CEN_LON'), attr('CEN_LAT'))
-
-        # grid origin coordinates in lambert
-        i0_x = center_x - extent_x*.5
-        j0_y = center_y - extent_y*.5
+        # Grid origin coordinates in lambert
+        i0_x = center_x - (nx - 1) * dx * 0.5
+        j0_y = center_y - (ny - 1) * dy * 0.5
 
         # Define fast transformation methods
         def latlon_to_ji(lat, lon):
-            x, y = pyproj.transform(latlon_sphere, lambert_grid,
-                    lon, lat)
-            return (y-j0_y)/dy, (x-i0_x)/dx
+            x, y = pyproj.transform(latlon_sphere, lambert_grid, lon, lat)
+            return (y - j0_y)/dy, (x - i0_x)/dx
         self.latlon_to_ji = latlon_to_ji
 
         def ji_to_latlon(j, i):
-            lon, lat = pyproj.transform(lambert_grid, latlon_sphere,
-                i*dx+i0_x, j*dy+j0_y)
+            lon, lat = pyproj.transform(lambert_grid, latlon_sphere, i*dx + i0_x, j*dy + j0_y)
             return lat, lon
         self.ji_to_latlon = ji_to_latlon
 
@@ -113,9 +92,9 @@ class WRFCoordTransform(object):
         print('error for U-staggered ll->ji: max {0} m, avg {1} m.'.format(d.max(), d.mean()))
 
 class BilinearRegridder(object):
-    '''Bilinear regridder for multidimensional data.
+    #Bilinear regridder for multidimensional data.
    # By standard, the last two dimensions are always Y,X in that order.
-    '''
+    
     def __init__(self, projected_x, projected_y, preloaded=False):
         projected_x = np.asanyarray(projected_x)
         projected_y = np.asanyarray(projected_y)
@@ -409,7 +388,7 @@ def palm_wrf_vertical_interp(infile, outfile, wrffile, z_levels, z_levels_stag,
     nc_outfile.close()
 
 def palm_wrf_gw(f, lon, lat, levels, tidx=0):
-    '''Calculate geostrophic wind from WRF using metpy'''
+    #Calculate geostrophic wind from WRF using metpy
     hgts, ug, vg = calcgw_wrf(f, lat, lon, levels, tidx)
 
     # extrapolate at the bottom
@@ -420,7 +399,7 @@ def palm_wrf_gw(f, lon, lat, levels, tidx=0):
     return minterp(levels, hgts, ug, vg)
 
 def minterp(interp_heights, data_heights, u, v):
-    '''Interpolate wind using power law for agl levels'''
+    #Interpolate wind using power law for agl levels
 
     pdata = data_heights ** gw_alpha
     pinterp = interp_heights ** gw_alpha
@@ -436,7 +415,7 @@ def minterp(interp_heights, data_heights, u, v):
     return iu, iv
 
 def get_wrf_dims(f, lat, lon, xlat, xlong):
-    '''A crude method, yet satisfactory for approximate WRF surroundings'''
+    #A crude method, yet satisfactory for approximate WRF surroundings
     sqdist = (xlat - lat)**2 + (xlong - lon)**2
     coords = np.unravel_index(sqdist.argmin(), sqdist.shape)
 

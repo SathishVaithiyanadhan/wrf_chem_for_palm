@@ -48,7 +48,7 @@ wrfchem_spec = ""
 # aerosols
 aerosol_wrfchem = False
 wrfchem_bin_limits = [3.9e-8, 1.56e-7, 6.25e-7, 2.5e-6, 1.0e-5]
-listspec = ['SO4']
+listspec = ['SO4','NO', 'NH', 'BC', 'OC', 'SS', 'DU']
 nbin = [1,7]
 reglim = [3.9e-8, 5.0e-8, 2.5e-6]
 nf2a = 1.0

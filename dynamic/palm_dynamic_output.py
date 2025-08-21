@@ -20,7 +20,7 @@ import palm_dynamic_aerosol
 def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
                         dimensions, z_levels, z_levels_stag, ztop,
                         z_soil_levels, dx, dy, lon_center, lat_center,
-                        rad_times_proc, rad_values_proc, sma, nested_domain):
+                        rad_times_proc, rad_values_proc, sma, nested_domain, origin_x, origin_y):
     print('\nProcessing interpolated files to dynamic driver')
     # dimension of the time coordinate
     dimtimes = len(times_sec)
@@ -64,23 +64,40 @@ def palm_dynamic_output(wrf_files, interp_files, dynamic_driver_file, times_sec,
     for _dim in zip(dimnames, dimsize_names):
         outfile.createDimension(_dim[0], dimensions[_dim[1]])
     # create variables (time and coordinates)
-    _val_times            = outfile.createVariable('time',"f4", ("time"))
+    _val_times            = outfile.createVariable('time',"f4", ("time"), fill_value=fillvalue_float)
     _val_times[:]         = times_sec[:]
+    _val_times.units = "seconds"
 
-    _val_z_levels         = outfile.createVariable('z',"f4", ("z"))
+    _val_z_levels         = outfile.createVariable('z',"f4", ("z"), fill_value=fillvalue_float)
     _val_z_levels[:]      = z_levels[:]
+    _val_z_levels.units = "m"
 
-    _val_z_levels_stag    = outfile.createVariable('zw',"f4", ("zw"))
+    _val_z_levels_stag    = outfile.createVariable('zw',"f4", ("zw"), fill_value=fillvalue_float)
     _val_z_levels_stag[:] = z_levels_stag[:]
+    _val_z_levels_stag.units = "m"
 
-    _val_z_soil_levels    = outfile.createVariable('zsoil',"f4", ("zsoil"))
+    _val_z_soil_levels    = outfile.createVariable('zsoil',"f4", ("zsoil"), fill_value=fillvalue_float)
     _val_z_soil_levels[:] = z_soil_levels[:]
+    _val_z_soil_levels.units = "m"
 
-    _val_y             = outfile.createVariable('y',"f4", ("y"))
+    _val_y             = outfile.createVariable('y',"f4", ("y"),fill_value=fillvalue_float)
     _val_y[:]          = y[:]
+    _val_y.units = "m"
 
-    _val_x             = outfile.createVariable('x',"f4", ("x"))
+    _val_x             = outfile.createVariable('x',"f4", ("x"), fill_value=fillvalue_float)
     _val_x[:]          = x[:]
+    _val_x.units = "m"
+
+    # New code for xu and yv
+    xu = origin_x + dx * (np.arange(dimensions['xudim']) + 1.0)
+    _val_xu = outfile.createVariable('xu', "f8", ("xu",), fill_value=fillvalue_float)
+    _val_xu[:] = xu
+    _val_xu.units = "m"
+
+    yv = origin_y + dy * (np.arange(dimensions['yvdim']) + 1.0)
+    _val_yv = outfile.createVariable('yv', "f8", ("yv",), fill_value=fillvalue_float)
+    _val_yv[:] = yv
+    _val_yv.units = "m"
     #---------------------------------------------------------------------------
     # include aerosols, add dimensions and variables
     if aerosol_wrfchem:

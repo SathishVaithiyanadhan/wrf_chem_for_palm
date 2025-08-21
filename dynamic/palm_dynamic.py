@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #------------------------------------------------------------------------------#
@@ -600,6 +601,6 @@ dimensions = {'zdim': nz, 'zwdim': nz-1, 'zsoildim': len(z_soil_levels), 'xdim':
 # process interpolated files to dynamic driver
 palm_dynamic_output(wrf_files_proc, interp_files, dynamic_driver_file, times_sec, dimensions,
                     z_levels, z_levels_stag, ztop, z_soil_levels, dx, dy, cent_lon, cent_lat,
-                    rad_times_proc, rad_values_proc, soil_moisture_adjust, nested_domain)
+                    rad_times_proc, rad_values_proc, soil_moisture_adjust, nested_domain, origin_x, origin_y)
 
 print('\nCreation of dynamic driver finished.')

@@ -15,7 +15,7 @@ def translate_aerosol_species(name):
             "NO" : "no3",
             "NH" : "nh4",
             "BC" : "bc",
-            "OC" : "smpa,smpbb,glysoa_sfc,biog1_c,biog1_o",
+            "OC" : "oc",
             "SS" : "cl,na",
             "DU" : "co3,ca,oin"
             }
